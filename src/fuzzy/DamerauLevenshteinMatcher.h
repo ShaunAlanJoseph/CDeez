@@ -1,6 +1,4 @@
 #pragma once
-#include <vector>
-#include <algorithm>
 #include "MatcherBase.h"
 
 class DamerauLevenshteinMatcher : public MatcherBase

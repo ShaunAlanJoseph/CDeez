@@ -1,6 +1,4 @@
 #pragma once
-#include <vector>
-#include <cmath>
 #include "MatcherBase.h"
 
 class SequenceMatcher : public MatcherBase

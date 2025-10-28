@@ -1,4 +1,6 @@
 #include "SequenceMatcher.h"
+#include <vector>
+#include <cmath>
 
 SequenceMatcher::SequenceMatcher(const std::string &needle) : MatcherBase(needle) {}
 

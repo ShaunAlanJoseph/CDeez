@@ -1,4 +1,6 @@
 #include "DamerauLevenshteinMatcher.h"
+#include <vector>
+#include <algorithm>
 
 DamerauLevenshteinMatcher::DamerauLevenshteinMatcher(const std::string &needle)
     : MatcherBase(needle) {}
