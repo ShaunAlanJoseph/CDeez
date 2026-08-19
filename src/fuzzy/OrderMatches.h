@@ -1,14 +1,13 @@
 #pragma once
+
 #include <string>
 #include <vector>
 
-using ld = long double;
-
-struct MatchResult
-{
-    std::string str;
-    ld score;
-    bool matched;
+struct MatchResult {
+  std::string str;
+  double score;
+  bool matched;
 };
 
-void scoreMatches(const std::string &needle, std::vector<MatchResult> &haystacks);
+void scoreMatches(const std::string& needle,
+                  std::vector<MatchResult>& haystacks);

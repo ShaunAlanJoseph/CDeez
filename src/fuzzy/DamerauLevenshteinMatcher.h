@@ -1,10 +1,12 @@
 #pragma once
+
+#include <string>
+
 #include "MatcherBase.h"
 
-class DamerauLevenshteinMatcher : public MatcherBase
-{
-public:
-    explicit DamerauLevenshteinMatcher(const std::string &needle);
+class DamerauLevenshteinMatcher : public MatcherBase {
+ public:
+  explicit DamerauLevenshteinMatcher(const std::string& needle);
 
-    ld score(const std::string &haystack) const override;
+  double score(const std::string& haystack) const override;
 };
