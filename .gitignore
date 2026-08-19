@@ -2,3 +2,5 @@
 
 # Folders to Ignore
 .vscode/
+.cache/
+build/
