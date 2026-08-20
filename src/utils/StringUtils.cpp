@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-std::vector<std::string> utils::tokenize(const std::string& str,
+std::vector<std::string> utils::tokenize(const std::string &str,
                                          char delimiter) {
   std::vector<std::string> tokens(1);
   for (char c : str) {
@@ -12,6 +12,7 @@ std::vector<std::string> utils::tokenize(const std::string& str,
     else
       tokens.back() += c;
   }
-  if (tokens.back().empty()) tokens.pop_back();
+  if (tokens.back().empty())
+    tokens.pop_back();
   return tokens;
 }

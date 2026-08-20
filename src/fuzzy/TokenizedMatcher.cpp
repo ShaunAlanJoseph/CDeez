@@ -9,10 +9,10 @@
 #include "utils/StringUtils.h"
 
 TokenizedLevenshteinMatcher::TokenizedLevenshteinMatcher(
-    const std::string& needle)
+    const std::string &needle)
     : MatcherBase(needle) {}
 
-double TokenizedLevenshteinMatcher::score(const std::string& haystack) const {
+double TokenizedLevenshteinMatcher::score(const std::string &haystack) const {
   /*
   @brief Tokenizes the needle and haystack strings and checks for token
   sequence matches.
@@ -22,7 +22,8 @@ double TokenizedLevenshteinMatcher::score(const std::string& haystack) const {
   std::vector<std::string> needleTokens = utils::tokenize(_needle),
                            haystackTokens = utils::tokenize(haystack);
 
-  if (needleTokens.empty() || haystackTokens.empty()) return 0.0;
+  if (needleTokens.empty() || haystackTokens.empty())
+    return 0.0;
 
   size_t n = needleTokens.size(), m = haystackTokens.size();
 

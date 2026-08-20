@@ -6,11 +6,11 @@
 #include "db/db.h"
 
 class Processor {
- private:
+private:
   DB _db;
 
-  double _computeBaseScore(const DB::PathEntry& entry, std::time_t now) const;
+  double _computeBaseScore(const DB::PathEntry &entry, std::time_t now) const;
 
- public:
-  bool handlePath(const std::string& path);
+public:
+  bool handlePath(const std::string &path);
 };

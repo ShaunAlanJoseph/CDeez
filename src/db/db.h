@@ -7,10 +7,10 @@
 #include <vector>
 
 class DB {
- private:
-  sqlite3* _db;
+private:
+  sqlite3 *_db;
 
- public:
+public:
   struct PathEntry {
     std::string path;
     int access_count;
@@ -21,7 +21,7 @@ class DB {
   ~DB();
 
   void ensureTable();
-  void upsertPath(const std::string& path, std::time_t access_time);
-  void removePath(const std::string& path);
+  void upsertPath(const std::string &path, std::time_t access_time);
+  void removePath(const std::string &path);
   std::vector<PathEntry> getPaths() const;
 };

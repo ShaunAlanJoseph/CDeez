@@ -9,5 +9,5 @@ struct MatchResult {
   bool matched;
 };
 
-void scoreMatches(const std::string& needle,
-                  std::vector<MatchResult>& haystacks);
+void scoreMatches(const std::string &needle,
+                  std::vector<MatchResult> &haystacks);

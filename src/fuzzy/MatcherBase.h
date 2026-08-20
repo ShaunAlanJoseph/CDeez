@@ -3,12 +3,12 @@
 #include <string>
 
 class MatcherBase {
- protected:
+protected:
   std::string _needle;
 
- public:
-  explicit MatcherBase(const std::string& needle);
+public:
+  explicit MatcherBase(const std::string &needle);
   virtual ~MatcherBase() = default;
 
-  virtual double score(const std::string& haystack) const = 0;
+  virtual double score(const std::string &haystack) const = 0;
 };

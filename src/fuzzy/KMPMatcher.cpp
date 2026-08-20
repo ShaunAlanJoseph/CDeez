@@ -5,7 +5,7 @@
 
 #include "MatcherBase.h"
 
-KMPMatcher::KMPMatcher(const std::string& needle) : MatcherBase(needle) {
+KMPMatcher::KMPMatcher(const std::string &needle) : MatcherBase(needle) {
   buildLPS();
 }
 
@@ -22,7 +22,7 @@ void KMPMatcher::buildLPS() {
   }
 }
 
-double KMPMatcher::score(const std::string& haystack) const {
+double KMPMatcher::score(const std::string &haystack) const {
   /*
   @brief Uses the Knuth-Morris-Pratt algorithm to find the needle in the
   haystack.
@@ -30,10 +30,11 @@ double KMPMatcher::score(const std::string& haystack) const {
   */
   size_t i = 0, j = 0;
   while (i < haystack.size()) {
-    if (_needle[j] == haystack[i]) ++i, ++j;
+    if (_needle[j] == haystack[i])
+      ++i, ++j;
 
     if (j == _needle.size())
-      return 1.0;  // match found
+      return 1.0; // match found
     else if (i < haystack.size() && _needle[j] != haystack[i]) {
       if (j != 0)
         j = _lps[j - 1];
@@ -41,5 +42,5 @@ double KMPMatcher::score(const std::string& haystack) const {
         ++i;
     }
   }
-  return 0.0;  // no match
+  return 0.0; // no match
 }

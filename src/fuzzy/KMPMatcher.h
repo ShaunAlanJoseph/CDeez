@@ -7,13 +7,13 @@
 #include "MatcherBase.h"
 
 class KMPMatcher : public MatcherBase {
- private:
+private:
   std::vector<size_t> _lps;
 
   void buildLPS();
 
- public:
-  explicit KMPMatcher(const std::string& needle);
+public:
+  explicit KMPMatcher(const std::string &needle);
 
-  double score(const std::string& haystack) const override;
+  double score(const std::string &haystack) const override;
 };

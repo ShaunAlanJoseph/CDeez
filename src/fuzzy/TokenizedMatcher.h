@@ -5,8 +5,8 @@
 #include "MatcherBase.h"
 
 class TokenizedLevenshteinMatcher : public MatcherBase {
- public:
-  explicit TokenizedLevenshteinMatcher(const std::string& needle);
+public:
+  explicit TokenizedLevenshteinMatcher(const std::string &needle);
 
-  double score(const std::string& haystack) const override;
+  double score(const std::string &haystack) const override;
 };

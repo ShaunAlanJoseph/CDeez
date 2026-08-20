@@ -5,8 +5,8 @@
 #include "MatcherBase.h"
 
 class DamerauLevenshteinMatcher : public MatcherBase {
- public:
-  explicit DamerauLevenshteinMatcher(const std::string& needle);
+public:
+  explicit DamerauLevenshteinMatcher(const std::string &needle);
 
-  double score(const std::string& haystack) const override;
+  double score(const std::string &haystack) const override;
 };

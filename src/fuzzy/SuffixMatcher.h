@@ -5,8 +5,8 @@
 #include "MatcherBase.h"
 
 class SuffixMatcher : public MatcherBase {
- public:
-  explicit SuffixMatcher(const std::string& needle);
+public:
+  explicit SuffixMatcher(const std::string &needle);
 
-  double score(const std::string& haystack) const override;
+  double score(const std::string &haystack) const override;
 };

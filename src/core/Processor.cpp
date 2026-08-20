@@ -13,19 +13,19 @@
 #include "utils/PathUtils.h"
 
 namespace {
-constexpr double LAST_HOUR = 3600.0;
-constexpr double LAST_DAY = 24 * LAST_HOUR;
-constexpr double LAST_WEEK = 7 * LAST_DAY;
-constexpr double LAST_MONTH = 30 * LAST_DAY;
+  constexpr double LAST_HOUR = 3600.0;
+  constexpr double LAST_DAY = 24 * LAST_HOUR;
+  constexpr double LAST_WEEK = 7 * LAST_DAY;
+  constexpr double LAST_MONTH = 30 * LAST_DAY;
 
-constexpr double LAST_HOUR_MULTIPLIER = 4.0;
-constexpr double LAST_DAY_MULTIPLIER = 2.0;
-constexpr double LAST_WEEK_MULTIPLIER = 1;
-constexpr double LAST_MONTH_MULTIPLIER = 0.5;
-constexpr double OLDER_MULTIPLIER = 0.25;
-}  // namespace
+  constexpr double LAST_HOUR_MULTIPLIER = 4.0;
+  constexpr double LAST_DAY_MULTIPLIER = 2.0;
+  constexpr double LAST_WEEK_MULTIPLIER = 1;
+  constexpr double LAST_MONTH_MULTIPLIER = 0.5;
+  constexpr double OLDER_MULTIPLIER = 0.25;
+} // namespace
 
-double Processor::_computeBaseScore(const DB::PathEntry& entry,
+double Processor::_computeBaseScore(const DB::PathEntry &entry,
                                     std::time_t now) const {
   double score = static_cast<double>(entry.access_count);
   double age = static_cast<double>(now - entry.last_accessed);
@@ -42,7 +42,7 @@ double Processor::_computeBaseScore(const DB::PathEntry& entry,
   return score;
 }
 
-bool Processor::handlePath(const std::string& path) {
+bool Processor::handlePath(const std::string &path) {
   if (path[0] == '~' || path == "-") {
     std::cout << path;
     return true;
@@ -63,19 +63,19 @@ bool Processor::handlePath(const std::string& path) {
 
   std::vector<MatchResult> results;
   std::time_t now = std::time(nullptr);
-  for (const auto& entry : paths)
+  for (const auto &entry : paths)
     results.emplace_back(entry.path, _computeBaseScore(entry, now), false);
 
   scoreMatches(path, results);
 
   std::sort(results.begin(), results.end(),
-            [](const MatchResult& a, const MatchResult& b) {
+            [](const MatchResult &a, const MatchResult &b) {
               return a.score > b.score;
             });
 
   std::string bestPath;
   double bestScore = 0.0L;
-  for (const auto& result : results) {
+  for (const auto &result : results) {
     std::cerr << result.str << " -> " << result.score << " " << result.matched
               << "\n";
     if (result.matched && result.score > bestScore) {
