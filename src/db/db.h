@@ -20,10 +20,8 @@ class DB {
   explicit DB();
   ~DB();
 
-  bool isOpen() const;
-
-  bool ensureTable();
-  bool upsertPath(const std::string& path, std::time_t access_time);
-  bool removePath(const std::string& path);
+  void ensureTable();
+  void upsertPath(const std::string& path, std::time_t access_time);
+  void removePath(const std::string& path);
   std::vector<PathEntry> getPaths() const;
 };

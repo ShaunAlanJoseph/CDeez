@@ -25,13 +25,6 @@ constexpr double LAST_MONTH_MULTIPLIER = 0.5;
 constexpr double OLDER_MULTIPLIER = 0.25;
 }  // namespace
 
-Processor::Processor() : _db() {
-  if (!_db.isOpen())
-    std::cerr << "Failed to open database." << std::endl;
-  else if (!_db.ensureTable())
-    std::cerr << "Failed to ensure database table." << std::endl;
-}
-
 double Processor::_computeBaseScore(const DB::PathEntry& entry,
                                     std::time_t now) const {
   double score = static_cast<double>(entry.access_count);

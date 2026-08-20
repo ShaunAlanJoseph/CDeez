@@ -12,7 +12,5 @@ class Processor {
   double _computeBaseScore(const DB::PathEntry& entry, std::time_t now) const;
 
  public:
-  Processor();
-
   bool handlePath(const std::string& path);
 };
