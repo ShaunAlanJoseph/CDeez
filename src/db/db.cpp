@@ -25,6 +25,13 @@ DB::DB() : _db(nullptr) {
     sqlite3_close(_db);
     throw std::runtime_error("Failed to open database: " + errorMsg);
   }
+
+  try {
+    ensureTable();
+  } catch (...) {
+    sqlite3_close(_db);
+    throw;
+  }
 }
 
 DB::~DB() { sqlite3_close(_db); }

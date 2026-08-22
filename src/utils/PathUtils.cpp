@@ -7,7 +7,7 @@
 #include <system_error>
 
 std::string utils::expandHome(const std::string &path) {
-  if (path.empty() || path[0] != '~')
+  if (path != "~" && !path.starts_with("~/"))
     return path;
 
   const char *home = std::getenv("HOME");
