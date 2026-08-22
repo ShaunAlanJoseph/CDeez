@@ -1,10 +1,8 @@
 #include "Processor.h"
 
-#include <unistd.h>
-
-#include <algorithm>
 #include <ctime>
-#include <iostream>
+#include <optional>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -42,60 +40,42 @@ double Processor::_computeBaseScore(const DB::PathEntry &entry,
   return score;
 }
 
-bool Processor::handlePath(const std::string &path) {
-  if (path[0] == '~' || path == "-") {
-    std::cout << path;
-    return true;
-  }
+bool Processor::_isExcluded(const std::string &path) const {
+  return path == "/" || path == utils::normalizePath("~");
+}
 
-  if (utils::dirExists(path)) {
-    std::string fullPath = utils::absolutePath(path);
-    _db.upsertPath(fullPath, std::time(nullptr));
-    std::cout << fullPath;
-    return true;
-  }
+void Processor::add(const std::string &path) {
+  std::string fullPath = utils::normalizePath(path);
 
-  auto paths = _db.getPaths();
-  if (paths.empty()) {
-    std::cerr << "No known paths in database." << std::endl;
-    return false;
-  }
+  if (!utils::dirExists(fullPath))
+    throw std::runtime_error("Not a directory: " + fullPath);
 
+  if (_isExcluded(fullPath))
+    return;
+
+  _db.upsertPath(fullPath, std::time(nullptr));
+}
+
+std::optional<std::string> Processor::resolve(const std::string &query) const {
   std::vector<MatchResult> results;
   std::time_t now = std::time(nullptr);
-  for (const auto &entry : paths)
+  for (const auto &entry : _db.getPaths())
     results.emplace_back(entry.path, _computeBaseScore(entry, now), false);
 
-  scoreMatches(path, results);
-
-  std::sort(results.begin(), results.end(),
-            [](const MatchResult &a, const MatchResult &b) {
-              return a.score > b.score;
-            });
+  scoreMatches(query, results);
 
   std::string bestPath;
-  double bestScore = 0.0L;
+  double bestScore = 0.0;
   for (const auto &result : results) {
-    std::cerr << result.str << " -> " << result.score << " " << result.matched
-              << "\n";
-    if (result.matched && result.score > bestScore) {
-      bestScore = result.score;
+    if (result.matched && result.score > bestScore &&
+        utils::dirExists(result.str)) {
       bestPath = result.str;
+      bestScore = result.score;
     }
   }
 
-  if (bestPath.empty()) {
-    std::cerr << "No matching path found." << std::endl;
-    return false;
-  }
+  if (bestPath.empty())
+    return std::nullopt;
 
-  if (!utils::dirExists(bestPath)) {
-    std::cerr << "Failed to change directory to: " << bestPath << std::endl;
-    _db.removePath(bestPath);
-    return false;
-  }
-
-  _db.upsertPath(bestPath, now);
-  std::cout << bestPath;
-  return true;
+  return bestPath;
 }

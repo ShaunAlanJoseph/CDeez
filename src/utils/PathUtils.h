@@ -9,5 +9,5 @@ namespace utils {
 
   bool dirExists(const std::string &path) noexcept;
 
-  std::string absolutePath(const std::string &path);
+  std::string normalizePath(const std::string &path);
 } // namespace utils

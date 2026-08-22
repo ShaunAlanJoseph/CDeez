@@ -1,30 +1,48 @@
 #include <exception>
 #include <iostream>
+#include <optional>
 #include <string>
 
 #include "core/Processor.h"
 
+namespace {
+  constexpr const char *USAGE = "Usage:\n"
+                                "  cdeez add <path>\n"
+                                "  cdeez query <term>\n";
+} // namespace
+
 int main(int argc, char *argv[]) {
-  if (argc > 2) {
-    std::cerr << "Usage: cdeez <path>";
-    return 1;
+  if (argc != 3) {
+    std::cerr << USAGE;
+    return 2;
   }
 
-  std::string path;
-  if (argc == 1)
-    path = "~";
-  else
-    path = argv[1];
+  std::string command = argv[1];
+  std::string arg = argv[2];
+
+  if (command != "add" && command != "query") {
+    std::cerr << USAGE;
+    return 2;
+  }
 
   try {
     Processor processor;
-    if (!processor.handlePath(path)) {
-      std::cerr << "Failed to handle path: " << path << std::endl;
+
+    if (command == "add") {
+      processor.add(arg);
+      return 0;
+    }
+
+    std::optional<std::string> match = processor.resolve(arg);
+    if (!match) {
+      std::cerr << "cdeez: no match for '" << arg << "'" << std::endl;
       return 1;
     }
+
+    std::cout << *match;
   } catch (const std::exception &e) {
-    std::cerr << "Error: " << e.what() << std::endl;
-    return 1;
+    std::cerr << "cdeez: " << e.what() << std::endl;
+    return 3;
   }
 
   return 0;

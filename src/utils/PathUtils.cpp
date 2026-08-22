@@ -28,6 +28,13 @@ bool utils::dirExists(const std::string &path) noexcept {
   return std::filesystem::is_directory(std::filesystem::path(path));
 }
 
-std::string utils::absolutePath(const std::string &path) {
-  return std::filesystem::canonical(path);
+std::string utils::normalizePath(const std::string &path) {
+  std::error_code ec;
+  std::string res =
+      std::filesystem::absolute(expandHome(path), ec).lexically_normal();
+  if (ec)
+    throw std::runtime_error("Failed to normalize path: " + ec.message());
+  if (res.size() > 1 && res.back() == '/')
+    res.pop_back();
+  return res;
 }
