@@ -3,11 +3,11 @@
 #include <string>
 
 namespace utils {
-  std::string expandHome(const std::string &path);
+  std::string expandHome(const std::string &path) noexcept;
 
-  bool createParentDirectoriesIfNotExist(const std::string &path);
+  void createParentDirectories(const std::string &path);
 
-  bool dirExists(const std::string &path);
+  bool dirExists(const std::string &path) noexcept;
 
   std::string absolutePath(const std::string &path);
 } // namespace utils

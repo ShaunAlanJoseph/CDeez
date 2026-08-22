@@ -17,8 +17,7 @@ namespace {
 DB::DB() : _db(nullptr) {
   std::string expandedPath = utils::expandHome(DB_PATH);
 
-  if (!utils::createParentDirectoriesIfNotExist(expandedPath))
-    throw std::runtime_error("Failed to create parent directories for DB");
+  utils::createParentDirectories(expandedPath);
 
   if (sqlite3_open(expandedPath.c_str(), &_db) != SQLITE_OK) {
     std::string errorMsg = sqlite3_errmsg(_db);

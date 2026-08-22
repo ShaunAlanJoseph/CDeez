@@ -1,3 +1,4 @@
+#include <exception>
 #include <iostream>
 #include <string>
 
@@ -14,9 +15,15 @@ int main(int argc, char *argv[]) {
     path = "~";
   else
     path = argv[1];
-  Processor processor;
-  if (!processor.handlePath(path)) {
-    std::cerr << "Failed to handle path: " << path << std::endl;
+
+  try {
+    Processor processor;
+    if (!processor.handlePath(path)) {
+      std::cerr << "Failed to handle path: " << path << std::endl;
+      return 1;
+    }
+  } catch (const std::exception &e) {
+    std::cerr << "Error: " << e.what() << std::endl;
     return 1;
   }
 
