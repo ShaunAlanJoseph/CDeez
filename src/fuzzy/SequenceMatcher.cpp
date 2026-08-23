@@ -37,6 +37,6 @@ double SequenceMatcher::score(const std::string &haystack) const {
   double score = 0.0;
   for (size_t size : cluster_sizes)
     score += static_cast<double>(size * size);
-  score = std::sqrtl(score) / static_cast<double>(_needle.size());
+  score = std::sqrt(score) / static_cast<double>(_needle.size());
   return score;
 }

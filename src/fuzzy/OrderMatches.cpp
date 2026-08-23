@@ -9,10 +9,10 @@
 #include "TokenizedMatcher.h"
 
 namespace {
-  constexpr long double WEIGHT_SUFFIX = 4.0L;
-  constexpr long double WEIGHT_KMP = 3.0L;
-  constexpr long double WEIGHT_TOKEN = 2.0L;
-  constexpr long double WEIGHT_DAMERAU = 1.0L;
+  constexpr double WEIGHT_SUFFIX = 4.0;
+  constexpr double WEIGHT_KMP = 3.0;
+  constexpr double WEIGHT_TOKEN = 2.0;
+  constexpr double WEIGHT_DAMERAU = 1.0;
 } // namespace
 
 void scoreMatches(const std::string &needle,
