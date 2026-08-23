@@ -5,6 +5,8 @@
 namespace utils {
   std::string expandHome(const std::string &path) noexcept;
 
+  std::string xdgDataHome() noexcept;
+
   void createParentDirectories(const std::string &path);
 
   bool dirExists(const std::string &path) noexcept;

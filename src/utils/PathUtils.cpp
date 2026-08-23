@@ -14,6 +14,14 @@ std::string utils::expandHome(const std::string &path) noexcept {
   return std::string(home ? home : "") + path.substr(1);
 }
 
+std::string utils::xdgDataHome() noexcept {
+  const char *dataHome = std::getenv("XDG_DATA_HOME");
+  if (dataHome && dataHome[0] == '/')
+    return dataHome;
+
+  return expandHome("~/.local/share");
+}
+
 void utils::createParentDirectories(const std::string &path) {
   std::filesystem::path fsPath(path);
   auto parentPath = fsPath.parent_path();

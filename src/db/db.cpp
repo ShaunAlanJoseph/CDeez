@@ -11,15 +11,15 @@
 #include "utils/ScopeGuard.h"
 
 namespace {
-  constexpr const char *DB_PATH = "~/.local/share/CDeez/db.sqlite3";
+  constexpr const char *DB_SUBPATH = "/cdeez/db.sqlite3";
 }
 
 DB::DB() : _db(nullptr) {
-  std::string expandedPath = utils::expandHome(DB_PATH);
+  std::string dbPath = utils::xdgDataHome() + DB_SUBPATH;
 
-  utils::createParentDirectories(expandedPath);
+  utils::createParentDirectories(dbPath);
 
-  if (sqlite3_open(expandedPath.c_str(), &_db) != SQLITE_OK) {
+  if (sqlite3_open(dbPath.c_str(), &_db) != SQLITE_OK) {
     std::string errorMsg = sqlite3_errmsg(_db);
     sqlite3_close(_db);
     throw std::runtime_error("Failed to open database: " + errorMsg);
