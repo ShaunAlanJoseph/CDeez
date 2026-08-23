@@ -7,12 +7,15 @@
 #include "KMPMatcher.h"
 #include "SuffixMatcher.h"
 #include "TokenizedMatcher.h"
+#include "utils/StringUtils.h"
 
 namespace {
   constexpr double WEIGHT_SUFFIX = 4.0;
   constexpr double WEIGHT_KMP = 3.0;
   constexpr double WEIGHT_TOKEN = 2.0;
   constexpr double WEIGHT_DAMERAU = 1.0;
+
+  constexpr double MIN_DAMERAU_SCORE = 0.5;
 } // namespace
 
 void scoreMatches(const std::string &needle,
@@ -73,8 +76,8 @@ void scoreMatches(const std::string &needle,
     for (auto &haystack : haystacks) {
       if (haystack.matched)
         continue;
-      double score = matcher.score(haystack.str);
-      if (score > 0.0) {
+      double score = matcher.score(utils::baseName(haystack.str));
+      if (score >= MIN_DAMERAU_SCORE) {
         haystack.score *= score * WEIGHT_DAMERAU;
         haystack.matched = true;
       }

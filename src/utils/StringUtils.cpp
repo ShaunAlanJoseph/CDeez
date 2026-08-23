@@ -1,5 +1,6 @@
 #include "utils/StringUtils.h"
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -15,4 +16,9 @@ std::vector<std::string> utils::tokenize(const std::string &str,
   if (tokens.back().empty())
     tokens.pop_back();
   return tokens;
+}
+
+std::string utils::baseName(const std::string &path) noexcept {
+  size_t pos = path.find_last_of('/');
+  return pos == std::string::npos ? path : path.substr(pos + 1);
 }
