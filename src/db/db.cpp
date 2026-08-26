@@ -12,7 +12,9 @@
 
 namespace {
   constexpr const char *DB_SUBPATH = "/cdeez/db.sqlite3";
-}
+
+  constexpr int BUSY_TIMEOUT_MS = 3000;
+} // namespace
 
 DB::DB() : _db(nullptr) {
   std::string dbPath = utils::xdgDataHome() + DB_SUBPATH;
@@ -26,6 +28,7 @@ DB::DB() : _db(nullptr) {
   }
 
   try {
+    configure();
     ensureTable();
   } catch (...) {
     sqlite3_close(_db);
@@ -34,6 +37,17 @@ DB::DB() : _db(nullptr) {
 }
 
 DB::~DB() { sqlite3_close(_db); }
+
+void DB::configure() {
+  // Another shell may be writing; wait rather than fail.
+  sqlite3_busy_timeout(_db, BUSY_TIMEOUT_MS);
+
+  constexpr const char *WAL_QUERY = "PRAGMA journal_mode = WAL;";
+  char *errMsg = nullptr;
+  utils::ScopeGuard errMsgGuard([&]() { sqlite3_free(errMsg); });
+  if (sqlite3_exec(_db, WAL_QUERY, nullptr, nullptr, &errMsg) != SQLITE_OK)
+    throw std::runtime_error("Failed to enable WAL: " + std::string(errMsg));
+}
 
 void DB::ensureTable() {
   constexpr const char *CREATE_TABLE_QUERY =

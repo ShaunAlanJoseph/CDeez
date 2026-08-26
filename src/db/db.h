@@ -10,6 +10,9 @@ class DB {
 private:
   sqlite3 *_db;
 
+  void configure();
+  void ensureTable();
+
 public:
   struct PathEntry {
     std::string path;
@@ -20,7 +23,6 @@ public:
   explicit DB();
   ~DB();
 
-  void ensureTable();
   void upsertPath(const std::string &path, std::time_t access_time);
   void removePath(const std::string &path);
   std::vector<PathEntry> getPaths() const;
