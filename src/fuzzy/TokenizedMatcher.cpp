@@ -25,8 +25,6 @@ double TokenizedLevenshteinMatcher::score(const std::string &haystack) const {
   if (needleTokens.empty() || haystackTokens.empty())
     return 0.0;
 
-  size_t n = needleTokens.size(), m = haystackTokens.size();
-
   auto needleIter = needleTokens.rbegin();
   for (size_t i = haystackTokens.size();
        i-- > 0 && needleIter != needleTokens.rend();)
