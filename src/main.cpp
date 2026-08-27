@@ -4,6 +4,7 @@
 #include <string>
 
 #include "core/Processor.h"
+#include "db/db.h"
 
 namespace {
   constexpr const char *USAGE = "Usage:\n"
@@ -26,7 +27,8 @@ int main(int argc, char *argv[]) {
   }
 
   try {
-    Processor processor;
+    DB db(DB::defaultPath());
+    Processor processor(db);
 
     if (command == "add") {
       processor.add(arg);

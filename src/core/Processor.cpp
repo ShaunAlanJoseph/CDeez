@@ -40,6 +40,8 @@ double Processor::_computeBaseScore(const DB::PathEntry &entry,
   return score;
 }
 
+Processor::Processor(DB &db) : _db(db) {}
+
 bool Processor::_isExcluded(const std::string &path) const {
   return path == "/" || path == utils::normalizePath("~");
 }

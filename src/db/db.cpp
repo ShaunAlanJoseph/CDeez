@@ -16,12 +16,12 @@ namespace {
   constexpr int BUSY_TIMEOUT_MS = 3000;
 } // namespace
 
-DB::DB() : _db(nullptr) {
-  std::string dbPath = utils::xdgDataHome() + DB_SUBPATH;
+std::string DB::defaultPath() { return utils::xdgDataHome() + DB_SUBPATH; }
 
-  utils::createParentDirectories(dbPath);
+DB::DB(const std::string &path) : _db(nullptr) {
+  utils::createParentDirectories(path);
 
-  if (sqlite3_open(dbPath.c_str(), &_db) != SQLITE_OK) {
+  if (sqlite3_open(path.c_str(), &_db) != SQLITE_OK) {
     std::string errorMsg = sqlite3_errmsg(_db);
     sqlite3_close(_db);
     throw std::runtime_error("Failed to open database: " + errorMsg);

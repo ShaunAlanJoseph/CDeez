@@ -20,7 +20,9 @@ public:
     std::time_t last_accessed;
   };
 
-  explicit DB();
+  static std::string defaultPath();
+
+  explicit DB(const std::string &path);
   ~DB();
 
   void upsertPath(const std::string &path, std::time_t access_time);
