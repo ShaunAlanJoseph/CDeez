@@ -12,7 +12,9 @@ endif()
 add_executable(cdeez_tests
   StringUtilsTest.cpp
   PathUtilsTest.cpp
-  MatchersTest.cpp)
+  MatchersTest.cpp
+  DbTest.cpp
+  ProcessorTest.cpp)
 
 target_link_libraries(cdeez_tests PRIVATE cdeez_lib Catch2::Catch2WithMain)
 
