@@ -30,6 +30,10 @@ add_executable(cdeez src/main.cpp)
 
 target_link_libraries(cdeez PRIVATE cdeez_lib)
 
+include(GNUInstallDirs)
+
+install(TARGETS cdeez RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
 if(CDEEZ_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
