@@ -24,7 +24,7 @@ add_library(cdeez_lib STATIC
 
 target_include_directories(cdeez_lib PUBLIC src)
 
-target_link_libraries(cdeez_lib PUBLIC SQLite3::SQLite3)
+target_link_libraries(cdeez_lib PUBLIC SQLite::SQLite3)
 
 add_executable(cdeez src/main.cpp)
 
