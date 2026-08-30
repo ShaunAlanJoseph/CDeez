@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main, claude-assisted]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  ubuntu:
+    name: ubuntu / ${{ matrix.compiler }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build libsqlite3-dev
+
+      # Catch2 is deliberately not installed here, so find_package misses and
+      # CMake falls back to FetchContent. That keeps this job exercising the
+      # path a contributor without a system Catch2 will hit.
+      - name: Configure
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_COMPILER=${{ matrix.compiler == 'gcc' && 'g++' || 'clang++' }} \
+            -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror"
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  arch:
+    name: arch / gcc
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Install dependencies
+        run: pacman -Syu --noconfirm cmake ninja gcc sqlite catch2 git
+
+      - uses: actions/checkout@v4
+
+      # Arch has Catch2 v3, so this job covers the find_package path and no
+      # network access is needed during configure.
+      - name: Configure
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror"
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  format:
+    name: clang-format
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Install dependencies
+        run: pacman -Syu --noconfirm clang git
+
+      - uses: actions/checkout@v4
+
+      - name: Check formatting
+        run: |
+          find src tests -name '*.cpp' -o -name '*.h' \
+            | xargs clang-format --dry-run --Werror
