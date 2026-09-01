@@ -19,6 +19,7 @@ add_library(cdeez_lib STATIC
   src/fuzzy/SequenceMatcher.cpp
   src/fuzzy/SuffixMatcher.cpp
   src/fuzzy/TokenizedMatcher.cpp
+  src/shell/ShellInit.cpp
   src/utils/PathUtils.cpp
   src/utils/StringUtils.cpp)
 

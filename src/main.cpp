@@ -5,11 +5,13 @@
 
 #include "core/Processor.h"
 #include "db/db.h"
+#include "shell/ShellInit.h"
 
 namespace {
   constexpr const char *USAGE = "Usage:\n"
                                 "  cdeez add <path>\n"
-                                "  cdeez query <term>\n";
+                                "  cdeez query <term>\n"
+                                "  cdeez init <zsh|bash|fish>\n";
 } // namespace
 
 int main(int argc, char *argv[]) {
@@ -21,9 +23,21 @@ int main(int argc, char *argv[]) {
   std::string command = argv[1];
   std::string arg = argv[2];
 
-  if (command != "add" && command != "query") {
+  if (command != "add" && command != "query" && command != "init") {
     std::cerr << USAGE;
     return 2;
+  }
+
+  // init needs no database, so it is handled before one is opened.
+  if (command == "init") {
+    std::optional<std::string> script = shell::initScript(arg);
+    if (!script) {
+      std::cerr << USAGE;
+      return 2;
+    }
+
+    std::cout << *script;
+    return 0;
   }
 
   try {
