@@ -27,36 +27,26 @@ cmake --build build
 cmake --install build --prefix ~/.local
 ```
 
-Then add the shell integration to `~/.zshrc`:
+Then add the shell integration to your shell's config:
 
-```zsh
-__cdeez_pwd()  { \builtin pwd -L }
-__cdeez_cd()   { \builtin cd -- "$@" }
-__cdeez_hook() { \command cdeez add "$(__cdeez_pwd)" }
+```sh
+# ~/.zshrc
+eval "$(cdeez init zsh)"
 
-\builtin typeset -ga chpwd_functions
-chpwd_functions=("${(@)chpwd_functions:#__cdeez_hook}")
-chpwd_functions+=(__cdeez_hook)
+# ~/.bashrc
+eval "$(cdeez init bash)"
 
-cd() {
-  if [[ "$#" -eq 0 ]]; then                                  # cd
-    __cdeez_cd ~
-  elif [[ "$#" -eq 1 && "$1" == "-" ]]; then                 # cd -
-    __cdeez_cd "${OLDPWD}"
-  elif [[ "$1" == -* && "$1" != "-" ]]; then                 # cd -2, cd -P ...
-    \builtin cd "$@"
-  elif [[ "$#" -eq 1 ]] && (\builtin cd -q -- "$1") 2>/dev/null; then
-    __cdeez_cd "$1"                                          # a real directory
-  else
-    \builtin local result                                    # otherwise, fuzzy
-    result="$(\command cdeez query "$1")" && __cdeez_cd "${result}"
-  fi
-}
+# ~/.config/fish/config.fish
+cdeez init fish | source
 ```
 
-Everything `cd` already did still works — no arguments, `-`, `-2`, `-P`,
-relative and absolute paths all go straight to the builtin. `cdeez` is only
-consulted when the argument isn't a directory that exists.
+That replaces `cd` with a wrapper and registers a hook that records every
+directory change. Everything `cd` already did still works — no arguments, `-`,
+`-2`, `-P`, relative and absolute paths all go straight through to the shell's
+own `cd`. `cdeez` is consulted only when the argument isn't a directory that
+exists.
+
+Run `cdeez init zsh` on its own to read the script before you eval it.
 
 ## Usage
 
@@ -66,6 +56,7 @@ The shell function is the interface. The binary underneath has two commands:
 |---|---|
 | `cdeez add <path>` | Record a visit. Called by the `chpwd` hook. |
 | `cdeez query <term>` | Print the best match to stdout, or exit 1. |
+| `cdeez init <shell>` | Print the integration script for zsh, bash or fish. |
 
 Exit codes: `0` resolved, `1` no match, `2` usage error, `3` database error.
 
