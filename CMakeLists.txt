@@ -35,6 +35,24 @@ include(GNUInstallDirs)
 
 install(TARGETS cdeez RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+find_program(SCDOC scdoc)
+
+if(SCDOC)
+  add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cdeez.1
+    COMMAND ${SCDOC} < ${CMAKE_CURRENT_SOURCE_DIR}/docs/cdeez.1.scd
+            > ${CMAKE_CURRENT_BINARY_DIR}/cdeez.1
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/docs/cdeez.1.scd
+    COMMENT "Generating cdeez.1")
+
+  add_custom_target(cdeez_man ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/cdeez.1)
+
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cdeez.1
+          DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
+else()
+  message(STATUS "scdoc not found - the man page will not be built")
+endif()
+
 if(CDEEZ_BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
