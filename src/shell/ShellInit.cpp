@@ -26,6 +26,19 @@ cd() {
     result="$(\command cdeez query "$1")" && __cdeez_cd "${result}"
   fi
 }
+
+if [[ -o zle ]]; then
+  __cdeez_complete() {
+    if (( CURRENT == 2 )); then
+      compadd -- add query init list
+    elif (( CURRENT == 3 )) && [[ "$words[2]" == init ]]; then
+      compadd -- zsh bash fish
+    elif (( CURRENT == 3 )) && [[ "$words[2]" == add ]]; then
+      _files -/
+    fi
+  }
+  compdef __cdeez_complete cdeez
+fi
 )SH";
 
   constexpr const char *BASH_SCRIPT = R"SH(__cdeez_pwd()  { \builtin pwd -L; }
@@ -51,6 +64,19 @@ cd() {
     result="$(\command cdeez query "$1")" && __cdeez_cd "${result}"
   fi
 }
+
+__cdeez_complete() {
+  local cur="${COMP_WORDS[COMP_CWORD]}"
+  local prev="${COMP_WORDS[COMP_CWORD-1]}"
+  if [ "$COMP_CWORD" -eq 1 ]; then
+    COMPREPLY=($(compgen -W "add query init list" -- "$cur"))
+  elif [ "$prev" = "init" ]; then
+    COMPREPLY=($(compgen -W "zsh bash fish" -- "$cur"))
+  elif [ "$prev" = "add" ]; then
+    COMPREPLY=($(compgen -d -- "$cur"))
+  fi
+}
+complete -F __cdeez_complete cdeez
 )SH";
 
   constexpr const char *FISH_SCRIPT =
@@ -79,6 +105,14 @@ function cd
 
     __cdeez_cd $argv
 end
+
+complete -c cdeez -f
+complete -c cdeez -n __fish_use_subcommand -a add   -d 'Record a visit'
+complete -c cdeez -n __fish_use_subcommand -a query -d 'Print the best match'
+complete -c cdeez -n __fish_use_subcommand -a init  -d 'Print shell integration'
+complete -c cdeez -n __fish_use_subcommand -a list  -d 'List known directories'
+complete -c cdeez -n '__fish_seen_subcommand_from init' -a 'zsh bash fish'
+complete -c cdeez -n '__fish_seen_subcommand_from add' -a '(__fish_complete_directories)'
 )SH";
 } // namespace
 
