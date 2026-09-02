@@ -1,5 +1,6 @@
 #include "Processor.h"
 
+#include <algorithm>
 #include <ctime>
 #include <optional>
 #include <stdexcept>
@@ -80,4 +81,21 @@ std::optional<std::string> Processor::resolve(const std::string &query) const {
     return std::nullopt;
 
   return bestPath;
+}
+
+std::vector<std::string> Processor::list() const {
+  std::vector<MatchResult> results;
+  std::time_t now = std::time(nullptr);
+  for (const auto &entry : _db.getPaths())
+    results.emplace_back(entry.path, _computeBaseScore(entry, now), false);
+
+  std::sort(results.begin(), results.end(),
+            [](const MatchResult &a, const MatchResult &b) {
+              return a.score > b.score;
+            });
+
+  std::vector<std::string> paths;
+  for (const auto &result : results)
+    paths.push_back(result.str);
+  return paths;
 }

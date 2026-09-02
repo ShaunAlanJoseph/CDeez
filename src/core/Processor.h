@@ -3,6 +3,7 @@
 #include <ctime>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "db/db.h"
 
@@ -20,4 +21,6 @@ public:
   void add(const std::string &path);
 
   std::optional<std::string> resolve(const std::string &query) const;
+
+  std::vector<std::string> list() const;
 };

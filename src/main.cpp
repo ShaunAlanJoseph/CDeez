@@ -11,10 +11,26 @@ namespace {
   constexpr const char *USAGE = "Usage:\n"
                                 "  cdeez add <path>\n"
                                 "  cdeez query <term>\n"
-                                "  cdeez init <zsh|bash|fish>\n";
+                                "  cdeez init <zsh|bash|fish>\n"
+                                "  cdeez list\n";
 } // namespace
 
 int main(int argc, char *argv[]) {
+  if (argc == 2 && std::string(argv[1]) == "list") {
+    try {
+      DB db(DB::defaultPath());
+      Processor processor(db);
+
+      for (const std::string &path : processor.list())
+        std::cout << path << "\n";
+    } catch (const std::exception &e) {
+      std::cerr << "cdeez: " << e.what() << std::endl;
+      return 3;
+    }
+
+    return 0;
+  }
+
   if (argc != 3) {
     std::cerr << USAGE;
     return 2;
