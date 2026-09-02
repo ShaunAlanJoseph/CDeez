@@ -8,7 +8,8 @@ cdeez - a cd that learns where you go, and forgives how you type
 
 *cdeez* add _path_++
 *cdeez* query _term_++
-*cdeez* init _zsh_|_bash_|_fish_
+*cdeez* init _zsh_|_bash_|_fish_++
+*cdeez* list
 
 # DESCRIPTION
 
@@ -32,6 +33,10 @@ directory changes.
 
 *init* _shell_
 	Print the shell integration script for _zsh_, _bash_ or _fish_.
+	The script also registers completions for *cdeez* itself.
+
+*list*
+	Print every known directory, most frecent first, one per line.
 
 # EXIT STATUS
 

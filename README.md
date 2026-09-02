@@ -57,6 +57,7 @@ The shell function is the interface. The binary underneath has two commands:
 | `cdeez add <path>` | Record a visit. Called by the `chpwd` hook. |
 | `cdeez query <term>` | Print the best match to stdout, or exit 1. |
 | `cdeez init <shell>` | Print the integration script for zsh, bash or fish. |
+| `cdeez list` | Print every known directory, most frecent first. |
 
 Exit codes: `0` resolved, `1` no match, `2` usage error, `3` database error.
 
