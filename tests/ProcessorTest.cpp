@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "TestSupport.h"
 #include "core/Processor.h"
@@ -149,4 +150,30 @@ TEST_CASE("resolve does not modify the database", "[Processor]") {
   std::vector<DB::PathEntry> paths = db.getPaths();
   REQUIRE(paths.size() == 1);
   REQUIRE(paths[0].access_count == 1);
+}
+
+TEST_CASE("list returns known paths ranked by frecency", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string rare = tmp.makeDir("rare");
+  std::string frequent = tmp.makeDir("frequent");
+
+  processor.add(rare);
+  for (int i = 0; i < 5; ++i)
+    processor.add(frequent);
+
+  std::vector<std::string> paths = processor.list();
+  REQUIRE(paths.size() == 2);
+  REQUIRE(paths[0] == frequent);
+  REQUIRE(paths[1] == rare);
+}
+
+TEST_CASE("list is empty for a fresh database", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  REQUIRE(processor.list().empty());
 }

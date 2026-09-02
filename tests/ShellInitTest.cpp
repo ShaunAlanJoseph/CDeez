@@ -37,3 +37,10 @@ TEST_CASE("each script hooks the shell's directory-change mechanism",
   REQUIRE(shell::initScript("fish")->find("--on-variable PWD") !=
           std::string::npos);
 }
+
+TEST_CASE("each script registers completions", "[ShellInit]") {
+  REQUIRE(shell::initScript("zsh")->find("compdef") != std::string::npos);
+  REQUIRE(shell::initScript("bash")->find("complete -F") != std::string::npos);
+  REQUIRE(shell::initScript("fish")->find("complete -c cdeez") !=
+          std::string::npos);
+}
