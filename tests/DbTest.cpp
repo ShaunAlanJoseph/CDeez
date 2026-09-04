@@ -1,3 +1,5 @@
+#include <sqlite3.h>
+
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
 #include <string>
@@ -91,4 +93,76 @@ TEST_CASE("defaultPath follows XDG_DATA_HOME", "[DB]") {
   testing::EnvGuard data("XDG_DATA_HOME", "/custom/data");
 
   REQUIRE(DB::defaultPath() == "/custom/data/cdeez/db.sqlite3");
+}
+
+TEST_CASE("totalAccessCount sums every entry", "[DB]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+
+  REQUIRE(db.totalAccessCount() == 0);
+
+  db.upsertPath("/a", 1000);
+  db.upsertPath("/a", 1000);
+  db.upsertPath("/b", 1000);
+
+  REQUIRE(db.totalAccessCount() == 3);
+}
+
+TEST_CASE("ageAll scales counts down", "[DB]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+
+  for (int i = 0; i < 100; ++i)
+    db.upsertPath("/a", 1000);
+
+  db.ageAll(0.5);
+
+  std::vector<DB::PathEntry> paths = db.getPaths();
+  REQUIRE(paths.size() == 1);
+  REQUIRE(paths[0].access_count == 50);
+}
+
+TEST_CASE("ageAll drops entries that fall below one visit", "[DB]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+
+  for (int i = 0; i < 100; ++i)
+    db.upsertPath("/busy", 1000);
+  db.upsertPath("/rare", 1000);
+
+  db.ageAll(0.5);
+
+  std::vector<DB::PathEntry> paths = db.getPaths();
+  REQUIRE(paths.size() == 1);
+  REQUIRE(paths[0].path == "/busy");
+}
+
+TEST_CASE("ageAll keeps the stored value integral", "[DB]") {
+  testing::TempDir tmp;
+  std::string path = tmp / "db.sqlite3";
+
+  {
+    DB db(path);
+    for (int i = 0; i < 10; ++i)
+      db.upsertPath("/a", 1000);
+    db.ageAll(0.333);
+  }
+
+  // Read the raw storage class: SQLite column types are advisory, so without
+  // a CAST the product would be stored as a REAL. Reading through
+  // sqlite3_column_int would truncate either way and hide the difference.
+  sqlite3 *raw = nullptr;
+  REQUIRE(sqlite3_open(path.c_str(), &raw) == SQLITE_OK);
+
+  sqlite3_stmt *stmt = nullptr;
+  REQUIRE(sqlite3_prepare_v2(raw, "SELECT typeof(access_count) FROM paths;", -1,
+                             &stmt, nullptr) == SQLITE_OK);
+  REQUIRE(sqlite3_step(stmt) == SQLITE_ROW);
+
+  std::string type =
+      reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0));
+  sqlite3_finalize(stmt);
+  sqlite3_close(raw);
+
+  REQUIRE(type == "integer");
 }

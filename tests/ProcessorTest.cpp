@@ -177,3 +177,45 @@ TEST_CASE("list is empty for a fresh database", "[Processor]") {
 
   REQUIRE(processor.list().empty());
 }
+
+TEST_CASE("add ages the database once visits exceed the cap", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db, 10);
+
+  std::string busy = tmp.makeDir("busy");
+  for (int i = 0; i < 11; ++i)
+    processor.add(busy);
+
+  // Scaled back to the cap rather than growing without bound.
+  REQUIRE(db.totalAccessCount() <= 10);
+}
+
+TEST_CASE("aging drops directories that fall out of use", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db, 10);
+
+  std::string rare = tmp.makeDir("rare");
+  std::string busy = tmp.makeDir("busy");
+
+  processor.add(rare);
+  for (int i = 0; i < 20; ++i)
+    processor.add(busy);
+
+  std::vector<std::string> paths = processor.list();
+  REQUIRE(paths.size() == 1);
+  REQUIRE(paths[0] == busy);
+}
+
+TEST_CASE("no aging happens below the cap", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db, 100);
+
+  std::string dir = tmp.makeDir("dir");
+  for (int i = 0; i < 5; ++i)
+    processor.add(dir);
+
+  REQUIRE(db.totalAccessCount() == 5);
+}
