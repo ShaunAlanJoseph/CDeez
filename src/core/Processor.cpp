@@ -22,6 +22,7 @@ namespace {
   constexpr double LAST_WEEK_MULTIPLIER = 1;
   constexpr double LAST_MONTH_MULTIPLIER = 0.5;
   constexpr double OLDER_MULTIPLIER = 0.25;
+
 } // namespace
 
 double Processor::_computeBaseScore(const DB::PathEntry &entry,
@@ -41,7 +42,8 @@ double Processor::_computeBaseScore(const DB::PathEntry &entry,
   return score;
 }
 
-Processor::Processor(DB &db) : _db(db) {}
+Processor::Processor(DB &db, int maxTotalAccess)
+    : _db(db), _maxTotalAccess(maxTotalAccess) {}
 
 bool Processor::_isExcluded(const std::string &path) const {
   return path == "/" || path == utils::normalizePath("~");
@@ -57,6 +59,10 @@ void Processor::add(const std::string &path) {
     return;
 
   _db.upsertPath(fullPath, std::time(nullptr));
+
+  int total = _db.totalAccessCount();
+  if (total > _maxTotalAccess)
+    _db.ageAll(static_cast<double>(_maxTotalAccess) / total);
 }
 
 std::optional<std::string> Processor::resolve(const std::string &query) const {

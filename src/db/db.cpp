@@ -137,3 +137,52 @@ std::vector<DB::PathEntry> DB::getPaths() const {
 
   return result;
 }
+
+int DB::totalAccessCount() const {
+  constexpr const char *TOTAL_QUERY =
+      "SELECT COALESCE(SUM(access_count), 0) FROM paths;";
+
+  sqlite3_stmt *stmt = nullptr;
+  utils::ScopeGuard stmtGuard([&]() { sqlite3_finalize(stmt); });
+  if (sqlite3_prepare_v2(_db, TOTAL_QUERY, -1, &stmt, nullptr) != SQLITE_OK)
+    throw std::runtime_error("Failed to prepare statement: " +
+                             std::string(sqlite3_errmsg(_db)));
+
+  if (sqlite3_step(stmt) != SQLITE_ROW)
+    throw std::runtime_error("Failed to read total: " +
+                             std::string(sqlite3_errmsg(_db)));
+
+  return sqlite3_column_int(stmt, 0);
+}
+
+void DB::ageAll(double factor) {
+  // Without CAST, SQLite stores the product as a REAL.
+  constexpr const char *AGE_QUERY =
+      "BEGIN;"
+      "UPDATE paths SET access_count = CAST(access_count * ?1 AS INTEGER);"
+      "DELETE FROM paths WHERE access_count < 1;"
+      "COMMIT;";
+
+  sqlite3_stmt *stmt = nullptr;
+  utils::ScopeGuard stmtGuard([&]() { sqlite3_finalize(stmt); });
+  const char *tail = AGE_QUERY;
+  while (*tail) {
+    if (sqlite3_prepare_v2(_db, tail, -1, &stmt, &tail) != SQLITE_OK)
+      throw std::runtime_error("Failed to prepare statement: " +
+                               std::string(sqlite3_errmsg(_db)));
+    if (!stmt)
+      break;
+
+    if (sqlite3_bind_parameter_count(stmt) > 0 &&
+        sqlite3_bind_double(stmt, 1, factor) != SQLITE_OK)
+      throw std::runtime_error("Failed to bind parameter: " +
+                               std::string(sqlite3_errmsg(_db)));
+
+    if (sqlite3_step(stmt) != SQLITE_DONE)
+      throw std::runtime_error("Failed to execute statement: " +
+                               std::string(sqlite3_errmsg(_db)));
+
+    sqlite3_finalize(stmt);
+    stmt = nullptr;
+  }
+}

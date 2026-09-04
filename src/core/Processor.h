@@ -10,13 +10,16 @@
 class Processor {
 private:
   DB &_db;
+  int _maxTotalAccess;
 
   double _computeBaseScore(const DB::PathEntry &entry, std::time_t now) const;
 
   bool _isExcluded(const std::string &path) const;
 
 public:
-  explicit Processor(DB &db);
+  static constexpr int DEFAULT_MAX_TOTAL_ACCESS = 10000;
+
+  explicit Processor(DB &db, int maxTotalAccess = DEFAULT_MAX_TOTAL_ACCESS);
 
   void add(const std::string &path);
 
