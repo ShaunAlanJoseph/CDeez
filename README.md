@@ -124,6 +124,13 @@ Anything in `(0.250, 0.667]` separates the two cleanly. The cut-off is **0.5**,
 biased toward the strict end: a false negative makes you retype, while a false
 positive silently drops you in the wrong directory.
 
+### Aging
+
+Visit counts don't grow forever. Once they total 10000, every entry is scaled
+down proportionally and anything that falls below a single visit is deleted.
+The database stays bounded, and a directory you stopped using a year ago fades
+out instead of competing with one you use daily.
+
 ### Recording is separate from jumping
 
 The shell hook calls `cdeez add` on *every* directory change, however you got

@@ -77,6 +77,10 @@ run as a cascade and the first one to match a candidate sets its weight:
 Tier 4 requires a similarity of at least 0.5, so an unrecognised query reports
 no match rather than jumping to whatever directory is most frecent.
 
+Visit counts do not grow without bound. Once they total 10000, every entry is
+scaled down proportionally and anything falling below a single visit is
+deleted, so directories you have stopped using fade out.
+
 # FILES
 
 _$XDG_DATA_HOME/cdeez/db.sqlite3_
