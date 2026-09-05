@@ -7,7 +7,7 @@ cdeez - a cd that learns where you go, and forgives how you type
 # SYNOPSIS
 
 *cdeez* add _path_++
-*cdeez* query _term_++
+*cdeez* query _term_...++
 *cdeez* init _zsh_|_bash_|_fish_++
 *cdeez* list
 
@@ -27,9 +27,10 @@ directory changes.
 	Record a visit to _path_, which must be an existing directory. Prints
 	nothing. The home directory and _/_ are silently ignored.
 
-*query* _term_
-	Print the best match for _term_ to standard output. Exits 1 if nothing
-	matches.
+*query* _term_...
+	Print the best match to standard output. Exits 1 if nothing matches.
+	Several terms are joined with _/_, so each must match a path segment in
+	order: *cdeez query src fuzzy* is the same as *cdeez query src/fuzzy*.
 
 *init* _shell_
 	Print the shell integration script for _zsh_, _bash_ or _fish_.
@@ -74,8 +75,12 @@ run as a cascade and the first one to match a candidate sets its weight:
 :  the query is close to the basename (Damerau-Levenshtein)
 :  1
 
+Matching is case-insensitive, though an exact-case match wins a tie against one
+that only matched after lowering.
+
 Tier 4 requires a similarity of at least 0.5, so an unrecognised query reports
-no match rather than jumping to whatever directory is most frecent.
+no match rather than jumping to whatever directory is most frecent. It is
+skipped entirely when the query spans more than one path segment.
 
 Visit counts do not grow without bound. Once they total 10000, every entry is
 scaled down proportionally and anything falling below a single visit is

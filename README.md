@@ -55,7 +55,7 @@ The shell function is the interface. The binary underneath has two commands:
 | Command | Effect |
 |---|---|
 | `cdeez add <path>` | Record a visit. Called by the `chpwd` hook. |
-| `cdeez query <term>` | Print the best match to stdout, or exit 1. |
+| `cdeez query <term>...` | Print the best match to stdout, or exit 1. |
 | `cdeez init <shell>` | Print the integration script for zsh, bash or fish. |
 | `cdeez list` | Print every known directory, most frecent first. |
 
@@ -88,6 +88,10 @@ matches it, and the tier determines the weight.
 | 3 | Subsequence, per path segment | the query's letters appear in order | ×2 |
 | 4 | Damerau–Levenshtein | the query is within an edit distance of the basename | ×1 |
 
+Matching is case-insensitive. An exact-case match still wins a tie against one
+that only matched after lowering, so `cd Work` and `cd work` can pick different
+directories when both exist.
+
 Tiers 1–3 are binary: they either match or they don't. Tier 4 is the only one
 that returns a graded score, and it's the one that makes typos work:
 
@@ -102,6 +106,21 @@ websit         ->  ~/Projects/website
 zzqqwx         ->  (no match, exit 1)
 qqq            ->  (no match, exit 1)
 ```
+
+### Several keywords
+
+Keywords are matched as one `/`-separated query, so each must match a path
+segment, in order:
+
+```
+cd src fuzzy       ->  ~/Projects/cdeez/src/fuzzy
+cd projects websit ->  ~/Projects/website
+cd fuzzy src       ->  (no match — order matters)
+```
+
+Tier 4 is skipped when the query spans more than one segment, since
+Damerau–Levenshtein compares against a single path component and
+`documents/taxes` is not a typo of any one directory name.
 
 ### Why tier 4 needs a floor
 
