@@ -23,7 +23,7 @@ cd() {
     __cdeez_cd "$1"
   else
     \builtin local result
-    result="$(\command cdeez query "$1")" && __cdeez_cd "${result}"
+    result="$(\command cdeez query "$@")" && __cdeez_cd "${result}"
   fi
 }
 
@@ -61,7 +61,7 @@ cd() {
     __cdeez_cd "$1"
   else
     local result
-    result="$(\command cdeez query "$1")" && __cdeez_cd "${result}"
+    result="$(\command cdeez query "$@")" && __cdeez_cd "${result}"
   fi
 }
 
@@ -95,10 +95,10 @@ function __cdeez_hook --on-variable PWD
 end
 
 function cd
-    if test (count $argv) -eq 1
+    if test (count $argv) -ge 1
         and not string match -q -- '-*' $argv[1]
-        and not test -d $argv[1]
-        set -l result (command cdeez query $argv[1])
+        and not test (count $argv) -eq 1 -a -d "$argv[1]"
+        set -l result (command cdeez query $argv)
         and __cdeez_cd $result
         return $status
     end
