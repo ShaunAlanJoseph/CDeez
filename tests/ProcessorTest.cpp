@@ -219,3 +219,58 @@ TEST_CASE("no aging happens below the cap", "[Processor]") {
 
   REQUIRE(db.totalAccessCount() == 5);
 }
+
+TEST_CASE("resolve matches regardless of case", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string downloads = tmp.makeDir("Downloads");
+  processor.add(downloads);
+
+  REQUIRE(processor.resolve({"downloads"}) == downloads);
+  REQUIRE(processor.resolve({"DOWNLOADS"}) == downloads);
+  REQUIRE(processor.resolve({"DoWnLoAdS"}) == downloads);
+}
+
+TEST_CASE("an exact-case match outranks one that needed lowering",
+          "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string exact = tmp.makeDir("a/work");
+  std::string differentCase = tmp.makeDir("b/Work");
+
+  processor.add(exact);
+  processor.add(differentCase);
+
+  REQUIRE(processor.resolve({"work"}) == exact);
+  REQUIRE(processor.resolve({"Work"}) == differentCase);
+}
+
+TEST_CASE("resolve matches path segments in order", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string nested = tmp.makeDir("projects/website");
+  processor.add(nested);
+
+  REQUIRE(processor.resolve({"projects/website"}) == nested);
+  REQUIRE(processor.resolve({"website"}) == nested);
+  REQUIRE(processor.resolve({"website/projects"}) == std::nullopt);
+}
+
+TEST_CASE("the typo tier is skipped for multi-segment queries", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string documents = tmp.makeDir("Documents");
+  processor.add(documents);
+
+  // Damerau-Levenshtein compares against one path component, so it must not
+  // let "documents/taxes" match the directory "Documents".
+  REQUIRE(processor.resolve({"documents/taxes"}) == std::nullopt);
+}
