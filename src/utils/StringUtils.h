@@ -7,4 +7,6 @@ namespace utils {
                                     char delimiter = '/');
 
   std::string baseName(const std::string &path) noexcept;
+
+  std::string toLower(const std::string &str) noexcept;
 } // namespace utils
