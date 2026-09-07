@@ -1,11 +1,13 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(CDeez VERSION 0.1.0)
+project(CDeez VERSION 1.0.0)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(CDEEZ_BUILD_TESTS "Build the test suite" ON)
+
+configure_file(src/Version.h.in ${CMAKE_CURRENT_BINARY_DIR}/generated/Version.h @ONLY)
 
 find_package(SQLite3 REQUIRED)
 
@@ -23,7 +25,8 @@ add_library(cdeez_lib STATIC
   src/utils/PathUtils.cpp
   src/utils/StringUtils.cpp)
 
-target_include_directories(cdeez_lib PUBLIC src)
+target_include_directories(cdeez_lib PUBLIC src
+                                          ${CMAKE_CURRENT_BINARY_DIR}/generated)
 
 target_link_libraries(cdeez_lib PUBLIC SQLite::SQLite3)
 

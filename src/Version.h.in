@@ -1,0 +1,5 @@
+#pragma once
+
+namespace cdeez {
+  constexpr const char *VERSION = "@PROJECT_VERSION@";
+} // namespace cdeez

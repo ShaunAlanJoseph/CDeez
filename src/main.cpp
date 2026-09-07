@@ -3,6 +3,7 @@
 #include <optional>
 #include <string>
 
+#include "Version.h"
 #include "core/Processor.h"
 #include "db/db.h"
 #include "shell/ShellInit.h"
@@ -12,7 +13,8 @@ namespace {
                                 "  cdeez add <path>\n"
                                 "  cdeez query <term>...\n"
                                 "  cdeez init <zsh|bash|fish>\n"
-                                "  cdeez list\n";
+                                "  cdeez list\n"
+                                "  cdeez --help | --version\n";
 
   int usageError() {
     std::cerr << USAGE;
@@ -33,6 +35,16 @@ int main(int argc, char *argv[]) {
     return usageError();
 
   std::string command = argv[1];
+
+  if (command == "--version" || command == "-V") {
+    std::cout << "cdeez " << cdeez::VERSION << "\n";
+    return 0;
+  }
+
+  if (command == "--help" || command == "-h") {
+    std::cout << USAGE;
+    return 0;
+  }
 
   if (command == "init") {
     if (argc != 3)
