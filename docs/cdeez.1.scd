@@ -9,7 +9,8 @@ cdeez - a cd that learns where you go, and forgives how you type
 *cdeez* add _path_++
 *cdeez* query _term_...++
 *cdeez* init _zsh_|_bash_|_fish_++
-*cdeez* list
+*cdeez* list++
+*cdeez* --help | --version
 
 # DESCRIPTION
 
@@ -38,6 +39,12 @@ directory changes.
 
 *list*
 	Print every known directory, most frecent first, one per line.
+
+*--help*, *-h*
+	Print usage and exit.
+
+*--version*, *-V*
+	Print the version and exit.
 
 # EXIT STATUS
 
