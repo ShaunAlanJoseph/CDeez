@@ -7,7 +7,7 @@ cdeez - a cd that learns where you go, and forgives how you type
 # SYNOPSIS
 
 *cdeez* add _path_++
-*cdeez* query _term_...++
+*cdeez* query [*--exclude* _path_] [*--list*] _term_...++
 *cdeez* init _zsh_|_bash_|_fish_++
 *cdeez* list++
 *cdeez* --help | --version
@@ -28,8 +28,11 @@ directory changes.
 	Record a visit to _path_, which must be an existing directory. Prints
 	nothing. The home directory and _/_ are silently ignored.
 
-*query* _term_...
+*query* [*--exclude* _path_] [*--list*] _term_...
 	Print the best match to standard output. Exits 1 if nothing matches.
+	*--exclude* omits _path_ from the results; the shell integration passes
+	the current directory, so a jump never lands where you already are.
+	*--list* prints every match, best first, instead of only the best.
 	Several terms are joined with _/_, so each must match a path segment in
 	order: *cdeez query src fuzzy* is the same as *cdeez query src/fuzzy*.
 
@@ -45,6 +48,19 @@ directory changes.
 
 *--version*, *-V*
 	Print the version and exit.
+
+# SHELL FUNCTIONS
+
+The script from *cdeez init* defines two commands:
+
+*cd* _term_...
+	Behaves exactly like the shell's own *cd* whenever the argument is a
+	real directory, an option, _-_, or absent. Otherwise it jumps to the
+	best match.
+
+*cdi* [_term_...]
+	Pipe every match through *fzf*(1) and change to the chosen directory.
+	With no arguments, offers every known directory.
 
 # EXIT STATUS
 
