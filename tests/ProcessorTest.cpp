@@ -274,3 +274,86 @@ TEST_CASE("the typo tier is skipped for multi-segment queries", "[Processor]") {
   // let "documents/taxes" match the directory "Documents".
   REQUIRE(processor.resolve({"documents/taxes"}) == std::nullopt);
 }
+
+TEST_CASE("rank returns every match, best first", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string rare = tmp.makeDir("a/work");
+  std::string frequent = tmp.makeDir("b/work");
+  tmp.makeDir("c/unrelated");
+  processor.add(tmp / "c/unrelated");
+
+  processor.add(rare);
+  for (int i = 0; i < 5; ++i)
+    processor.add(frequent);
+
+  std::vector<std::string> matches = processor.rank("work");
+  REQUIRE(matches.size() == 2);
+  REQUIRE(matches[0] == frequent);
+  REQUIRE(matches[1] == rare);
+}
+
+TEST_CASE("rank omits the excluded path", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string here = tmp.makeDir("a/work");
+  std::string elsewhere = tmp.makeDir("b/work");
+
+  for (int i = 0; i < 5; ++i)
+    processor.add(here);
+  processor.add(elsewhere);
+
+  // Without this, standing in a directory and querying its own name is a
+  // no-op jump that wastes the query.
+  std::vector<std::string> matches = processor.rank("work", here);
+  REQUIRE(matches.size() == 1);
+  REQUIRE(matches[0] == elsewhere);
+}
+
+TEST_CASE("resolve honours the exclusion", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string here = tmp.makeDir("a/work");
+  std::string elsewhere = tmp.makeDir("b/work");
+
+  for (int i = 0; i < 5; ++i)
+    processor.add(here);
+  processor.add(elsewhere);
+
+  REQUIRE(processor.resolve("work") == here);
+  REQUIRE(processor.resolve("work", here) == elsewhere);
+}
+
+TEST_CASE("excluding the only match yields nothing", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string only = tmp.makeDir("work");
+  processor.add(only);
+
+  REQUIRE(processor.resolve("work", only) == std::nullopt);
+}
+
+TEST_CASE("rank omits directories that no longer exist", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string stale = tmp.makeDir("a/work");
+  std::string live = tmp.makeDir("b/work");
+  processor.add(stale);
+  processor.add(live);
+
+  std::filesystem::remove_all(stale);
+
+  std::vector<std::string> matches = processor.rank("work");
+  REQUIRE(matches.size() == 1);
+  REQUIRE(matches[0] == live);
+}
