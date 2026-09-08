@@ -23,7 +23,11 @@ public:
 
   void add(const std::string &path);
 
-  std::optional<std::string> resolve(const std::string &query) const;
+  std::vector<std::string> rank(const std::string &query,
+                                const std::string &exclude = "") const;
+
+  std::optional<std::string> resolve(const std::string &query,
+                                     const std::string &exclude = "") const;
 
   std::vector<std::string> list() const;
 };

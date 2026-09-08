@@ -65,7 +65,8 @@ void Processor::add(const std::string &path) {
     _db.ageAll(static_cast<double>(_maxTotalAccess) / total);
 }
 
-std::optional<std::string> Processor::resolve(const std::string &query) const {
+std::vector<std::string> Processor::rank(const std::string &query,
+                                         const std::string &exclude) const {
   std::vector<MatchResult> results;
   std::time_t now = std::time(nullptr);
   for (const auto &entry : _db.getPaths())
@@ -73,20 +74,30 @@ std::optional<std::string> Processor::resolve(const std::string &query) const {
 
   scoreMatches(query, results);
 
-  std::string bestPath;
-  double bestScore = 0.0;
-  for (const auto &result : results) {
-    if (result.matched && result.score > bestScore &&
-        utils::dirExists(result.str)) {
-      bestPath = result.str;
-      bestScore = result.score;
-    }
-  }
+  std::sort(results.begin(), results.end(),
+            [](const MatchResult &a, const MatchResult &b) {
+              return a.score > b.score;
+            });
 
-  if (bestPath.empty())
+  std::vector<std::string> matches;
+  for (const auto &result : results) {
+    if (!result.matched || result.str == exclude)
+      continue;
+    if (!utils::dirExists(result.str))
+      continue;
+
+    matches.push_back(result.str);
+  }
+  return matches;
+}
+
+std::optional<std::string>
+Processor::resolve(const std::string &query, const std::string &exclude) const {
+  std::vector<std::string> matches = rank(query, exclude);
+  if (matches.empty())
     return std::nullopt;
 
-  return bestPath;
+  return matches.front();
 }
 
 std::vector<std::string> Processor::list() const {

@@ -7,11 +7,13 @@
 #include "core/Processor.h"
 #include "db/db.h"
 #include "shell/ShellInit.h"
+#include "utils/PathUtils.h"
 
 namespace {
   constexpr const char *USAGE = "Usage:\n"
                                 "  cdeez add <path>\n"
-                                "  cdeez query <term>...\n"
+                                "  cdeez query [--exclude <path>] [--list]\n"
+                                "              <term>...\n"
                                 "  cdeez init <zsh|bash|fish>\n"
                                 "  cdeez list\n"
                                 "  cdeez --help | --version\n";
@@ -60,8 +62,6 @@ int main(int argc, char *argv[]) {
 
   if (command == "add" && argc != 3)
     return usageError();
-  if (command == "query" && argc < 3)
-    return usageError();
   if (command == "list" && argc != 2)
     return usageError();
   if (command != "add" && command != "query" && command != "list")
@@ -82,8 +82,42 @@ int main(int argc, char *argv[]) {
       return 0;
     }
 
-    std::string query = joinKeywords(argc, argv, 2);
-    std::optional<std::string> match = processor.resolve(query);
+    std::string exclude;
+    bool listAll = false;
+
+    int first = 2;
+    while (first < argc) {
+      std::string flag = argv[first];
+
+      if (flag == "--list") {
+        listAll = true;
+        ++first;
+      } else if (flag == "--exclude") {
+        if (first + 2 >= argc)
+          return usageError();
+
+        exclude = utils::normalizePath(argv[first + 1]);
+        first += 2;
+      } else if (flag == "--") {
+        ++first;
+        break;
+      } else {
+        break;
+      }
+    }
+
+    if (first >= argc)
+      return usageError();
+
+    std::string query = joinKeywords(argc, argv, first);
+
+    if (listAll) {
+      for (const std::string &path : processor.rank(query, exclude))
+        std::cout << path << "\n";
+      return 0;
+    }
+
+    std::optional<std::string> match = processor.resolve(query, exclude);
     if (!match) {
       std::cerr << "cdeez: no match for '" << query << "'" << std::endl;
       return 1;
