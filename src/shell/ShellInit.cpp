@@ -23,8 +23,26 @@ cd() {
     __cdeez_cd "$1"
   else
     \builtin local result
-    result="$(\command cdeez query "$@")" && __cdeez_cd "${result}"
+    result="$(\command cdeez query --exclude "$(__cdeez_pwd)" -- "$@")" \
+      && __cdeez_cd "${result}"
   fi
+}
+
+cdi() {
+  if ! \command -v fzf >/dev/null 2>&1; then
+    \builtin print -u2 "cdi: fzf is not installed"
+    return 1
+  fi
+
+  \builtin local result
+  if [[ "$#" -eq 0 ]]; then
+    result="$(\command cdeez list | fzf --height 40% --reverse --no-sort)"
+  else
+    result="$(\command cdeez query --list --exclude "$(__cdeez_pwd)" -- "$@" \
+      | fzf --height 40% --reverse --no-sort)"
+  fi
+
+  [[ -n "$result" ]] && __cdeez_cd "${result}"
 }
 
 if [[ -o zle ]]; then
@@ -61,8 +79,26 @@ cd() {
     __cdeez_cd "$1"
   else
     local result
-    result="$(\command cdeez query "$@")" && __cdeez_cd "${result}"
+    result="$(\command cdeez query --exclude "$(__cdeez_pwd)" -- "$@")" \
+      && __cdeez_cd "${result}"
   fi
+}
+
+cdi() {
+  if ! \command -v fzf >/dev/null 2>&1; then
+    echo "cdi: fzf is not installed" >&2
+    return 1
+  fi
+
+  local result
+  if [ "$#" -eq 0 ]; then
+    result="$(\command cdeez list | fzf --height 40% --reverse --no-sort)"
+  else
+    result="$(\command cdeez query --list --exclude "$(__cdeez_pwd)" -- "$@" \
+      | fzf --height 40% --reverse --no-sort)"
+  fi
+
+  [ -n "$result" ] && __cdeez_cd "${result}"
 }
 
 __cdeez_complete() {
@@ -98,12 +134,30 @@ function cd
     if test (count $argv) -ge 1
         and not string match -q -- '-*' $argv[1]
         and not test (count $argv) -eq 1 -a -d "$argv[1]"
-        set -l result (command cdeez query $argv)
+        set -l result (command cdeez query --exclude "$PWD" -- $argv)
         and __cdeez_cd $result
         return $status
     end
 
     __cdeez_cd $argv
+end
+
+function cdi
+    if not command -v fzf >/dev/null 2>&1
+        echo "cdi: fzf is not installed" >&2
+        return 1
+    end
+
+    set -l result
+    if test (count $argv) -eq 0
+        set result (command cdeez list | fzf --height 40% --reverse --no-sort)
+    else
+        set result (command cdeez query --list --exclude "$PWD" -- $argv \
+            | fzf --height 40% --reverse --no-sort)
+    end
+
+    test -n "$result"
+    and __cdeez_cd $result
 end
 
 complete -c cdeez -f
