@@ -10,6 +10,7 @@ cdeez - a cd that learns where you go, and forgives how you type
 *cdeez* query [*--exclude* _path_] [*--list*] _term_...++
 *cdeez* init _zsh_|_bash_|_fish_++
 *cdeez* list++
+*cdeez* import++
 *cdeez* --help | --version
 
 # DESCRIPTION
@@ -42,6 +43,20 @@ directory changes.
 
 *list*
 	Print every known directory, most frecent first, one per line.
+
+*import*
+	Read directories from standard input, one per line, each optionally
+	preceded by a score, and record them. Directories that no longer exist
+	are skipped. Counts are added to any already recorded.
+
+	The format matches *zoxide query --list --score*:
+
+	```
+	zoxide query --list --score | cdeez import
+	```
+
+	A plain list of paths works too, so the same command imports from *z*,
+	*autojump*, or *find*(1).
 
 *--help*, *-h*
 	Print usage and exit.

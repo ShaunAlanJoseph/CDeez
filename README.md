@@ -58,12 +58,27 @@ The shell function is the interface. The binary underneath has two commands:
 | `cdeez query [--exclude <path>] [--list] <term>...` | Print the best match to stdout, or exit 1. `--list` prints every match. |
 | `cdeez init <shell>` | Print the integration script for zsh, bash or fish. |
 | `cdeez list` | Print every known directory, most frecent first. |
+| `cdeez import` | Read directories from stdin and record them. |
 | `cdeez --help`, `--version` | Usage and version. |
 
 Exit codes: `0` resolved, `1` no match, `2` usage error, `3` database error.
 
 Data lives in `$XDG_DATA_HOME/cdeez/db.sqlite3`, falling back to
 `~/.local/share/cdeez/db.sqlite3`.
+
+## Coming from zoxide
+
+An empty database makes cdeez worse than whatever you're replacing, so bring
+your history with you:
+
+```sh
+zoxide query --list --score | cdeez import
+```
+
+`import` reads one directory per line from stdin, optionally preceded by a
+score, and skips anything that no longer exists. That format is what `zoxide
+query --list --score` emits, but a plain list of paths works too — so the same
+command imports from `z`, autojump, or `find`.
 
 ## How ranking works
 
