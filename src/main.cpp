@@ -16,6 +16,7 @@ namespace {
                                 "              <term>...\n"
                                 "  cdeez init <zsh|bash|fish>\n"
                                 "  cdeez list\n"
+                                "  cdeez import   (reads paths on stdin)\n"
                                 "  cdeez --help | --version\n";
 
   int usageError() {
@@ -64,7 +65,10 @@ int main(int argc, char *argv[]) {
     return usageError();
   if (command == "list" && argc != 2)
     return usageError();
-  if (command != "add" && command != "query" && command != "list")
+  if (command == "import" && argc != 2)
+    return usageError();
+  if (command != "add" && command != "query" && command != "list" &&
+      command != "import")
     return usageError();
 
   try {
@@ -73,6 +77,13 @@ int main(int argc, char *argv[]) {
 
     if (command == "add") {
       processor.add(argv[2]);
+      return 0;
+    }
+
+    if (command == "import") {
+      Processor::ImportResult result = processor.import(std::cin);
+      std::cerr << "cdeez: imported " << result.imported << " directories, "
+                << "skipped " << result.skipped << std::endl;
       return 0;
     }
 

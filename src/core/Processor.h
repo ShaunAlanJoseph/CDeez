@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ctime>
+#include <istream>
 #include <optional>
 #include <string>
 #include <vector>
@@ -30,4 +31,11 @@ public:
                                      const std::string &exclude = "") const;
 
   std::vector<std::string> list() const;
+
+  struct ImportResult {
+    int imported;
+    int skipped;
+  };
+
+  ImportResult import(std::istream &input);
 };
