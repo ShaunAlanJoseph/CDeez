@@ -2,6 +2,7 @@
 #include <ctime>
 #include <filesystem>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -356,4 +357,93 @@ TEST_CASE("rank omits directories that no longer exist", "[Processor]") {
   std::vector<std::string> matches = processor.rank("work");
   REQUIRE(matches.size() == 1);
   REQUIRE(matches[0] == live);
+}
+
+TEST_CASE("import reads the score-and-path format", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string alpha = tmp.makeDir("alpha");
+  std::string beta = tmp.makeDir("beta");
+
+  // This is exactly what `zoxide query --list --score` emits.
+  std::istringstream input("   12.5 " + alpha + "\n    4.0 " + beta + "\n");
+  Processor::ImportResult result = processor.import(input);
+
+  REQUIRE(result.imported == 2);
+  REQUIRE(result.skipped == 0);
+
+  std::vector<DB::PathEntry> paths = db.getPaths();
+  REQUIRE(paths.size() == 2);
+  for (const auto &entry : paths) {
+    if (entry.path == alpha)
+      REQUIRE(entry.access_count == 13); // rounded
+    else
+      REQUIRE(entry.access_count == 4);
+  }
+}
+
+TEST_CASE("import reads bare paths", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string alpha = tmp.makeDir("alpha");
+
+  std::istringstream input(alpha + "\n");
+  REQUIRE(processor.import(input).imported == 1);
+  REQUIRE(db.getPaths()[0].access_count == 1);
+}
+
+TEST_CASE("import skips directories that do not exist", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::istringstream input("   9.0 " + std::string(tmp / "missing") + "\n");
+  Processor::ImportResult result = processor.import(input);
+
+  REQUIRE(result.imported == 0);
+  REQUIRE(result.skipped == 1);
+  REQUIRE(db.getPaths().empty());
+}
+
+TEST_CASE("import ignores blank lines and surrounding space", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string alpha = tmp.makeDir("alpha");
+
+  std::istringstream input("\n\n   " + alpha + "   \n\n");
+  REQUIRE(processor.import(input).imported == 1);
+}
+
+TEST_CASE("import merges with visits already recorded", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string alpha = tmp.makeDir("alpha");
+  processor.add(alpha);
+  processor.add(alpha);
+
+  std::istringstream input("   5.0 " + alpha + "\n");
+  processor.import(input);
+
+  REQUIRE(db.getPaths()[0].access_count == 7);
+}
+
+TEST_CASE("import honours the home and root exclusions", "[Processor]") {
+  testing::TempDir tmp;
+  testing::EnvGuard home("HOME", tmp.path().c_str());
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::istringstream input("   9.0 " + tmp.path().string() + "\n   9.0 /\n");
+  Processor::ImportResult result = processor.import(input);
+
+  REQUIRE(result.imported == 0);
+  REQUIRE(result.skipped == 2);
 }
