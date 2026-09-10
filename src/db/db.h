@@ -11,7 +11,9 @@ private:
   sqlite3 *_db;
 
   void configure();
-  void ensureTable();
+  void migrate();
+  int schemaVersion() const;
+  void exec(const char *query);
 
 public:
   struct PathEntry {

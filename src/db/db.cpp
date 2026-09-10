@@ -14,6 +14,8 @@ namespace {
   constexpr const char *DB_SUBPATH = "/cdeez/db.sqlite3";
 
   constexpr int BUSY_TIMEOUT_MS = 3000;
+
+  constexpr int SCHEMA_VERSION = 2;
 } // namespace
 
 std::string DB::defaultPath() { return utils::xdgDataHome() + DB_SUBPATH; }
@@ -29,7 +31,7 @@ DB::DB(const std::string &path) : _db(nullptr) {
 
   try {
     configure();
-    ensureTable();
+    migrate();
   } catch (...) {
     sqlite3_close(_db);
     throw;
@@ -49,17 +51,53 @@ void DB::configure() {
     throw std::runtime_error("Failed to enable WAL: " + std::string(errMsg));
 }
 
-void DB::ensureTable() {
-  constexpr const char *CREATE_TABLE_QUERY =
-      "CREATE TABLE IF NOT EXISTS paths ("
-      "path TEXT PRIMARY KEY, "
-      "access_count INTEGER NOT NULL, "
-      "last_accessed INTEGER NOT NULL);";
+void DB::exec(const char *query) {
   char *errMsg = nullptr;
   utils::ScopeGuard errMsgGuard([&]() { sqlite3_free(errMsg); });
-  if (sqlite3_exec(_db, CREATE_TABLE_QUERY, nullptr, nullptr, &errMsg) !=
+  if (sqlite3_exec(_db, query, nullptr, nullptr, &errMsg) != SQLITE_OK)
+    throw std::runtime_error("Failed to execute statement: " +
+                             std::string(errMsg));
+}
+
+int DB::schemaVersion() const {
+  sqlite3_stmt *stmt = nullptr;
+  utils::ScopeGuard stmtGuard([&]() { sqlite3_finalize(stmt); });
+  if (sqlite3_prepare_v2(_db, "PRAGMA user_version;", -1, &stmt, nullptr) !=
       SQLITE_OK)
-    throw std::runtime_error("Failed to create table: " + std::string(errMsg));
+    throw std::runtime_error("Failed to read the schema version: " +
+                             std::string(sqlite3_errmsg(_db)));
+
+  if (sqlite3_step(stmt) != SQLITE_ROW)
+    throw std::runtime_error("Failed to read the schema version: " +
+                             std::string(sqlite3_errmsg(_db)));
+
+  return sqlite3_column_int(stmt, 0);
+}
+
+void DB::migrate() {
+  int version = schemaVersion();
+
+  if (version > SCHEMA_VERSION)
+    throw std::runtime_error(
+        "The database was written by a newer version of cdeez (schema " +
+        std::to_string(version) + ", this build understands " +
+        std::to_string(SCHEMA_VERSION) + ")");
+
+  // Idempotent, so a pre-versioning database upgrades cleanly.
+  if (version < 1)
+    exec("CREATE TABLE IF NOT EXISTS paths ("
+         "path TEXT PRIMARY KEY, "
+         "access_count INTEGER NOT NULL, "
+         "last_accessed INTEGER NOT NULL);");
+
+  if (version < 2)
+    exec("CREATE TABLE IF NOT EXISTS tags ("
+         "tag TEXT PRIMARY KEY, "
+         "path TEXT NOT NULL);");
+
+  if (version < SCHEMA_VERSION)
+    exec(("PRAGMA user_version = " + std::to_string(SCHEMA_VERSION) + ";")
+             .c_str());
 }
 
 void DB::upsertPath(const std::string &path, std::time_t access_time) {
