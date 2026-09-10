@@ -2,6 +2,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
+#include <stdexcept>
 #include <string>
 
 #include "TestSupport.h"
@@ -165,4 +166,76 @@ TEST_CASE("ageAll keeps the stored value integral", "[DB]") {
   sqlite3_close(raw);
 
   REQUIRE(type == "integer");
+}
+
+namespace {
+  int rawUserVersion(const std::string &path) {
+    sqlite3 *raw = nullptr;
+    REQUIRE(sqlite3_open(path.c_str(), &raw) == SQLITE_OK);
+
+    sqlite3_stmt *stmt = nullptr;
+    REQUIRE(sqlite3_prepare_v2(raw, "PRAGMA user_version;", -1, &stmt,
+                               nullptr) == SQLITE_OK);
+    REQUIRE(sqlite3_step(stmt) == SQLITE_ROW);
+
+    int version = sqlite3_column_int(stmt, 0);
+    sqlite3_finalize(stmt);
+    sqlite3_close(raw);
+    return version;
+  }
+
+  void runRaw(const std::string &path, const char *sql) {
+    sqlite3 *raw = nullptr;
+    REQUIRE(sqlite3_open(path.c_str(), &raw) == SQLITE_OK);
+    REQUIRE(sqlite3_exec(raw, sql, nullptr, nullptr, nullptr) == SQLITE_OK);
+    sqlite3_close(raw);
+  }
+} // namespace
+
+TEST_CASE("a new database records its schema version", "[DB]") {
+  testing::TempDir tmp;
+  std::string path = tmp / "db.sqlite3";
+
+  {
+    DB db(path);
+  }
+
+  REQUIRE(rawUserVersion(path) > 0);
+}
+
+TEST_CASE("a database predating versioning is migrated in place", "[DB]") {
+  testing::TempDir tmp;
+  std::string path = tmp / "db.sqlite3";
+
+  // Exactly what earlier releases left behind: the paths table, with data,
+  // and no user_version stamp.
+  runRaw(path, "CREATE TABLE paths ("
+               "path TEXT PRIMARY KEY, "
+               "access_count INTEGER NOT NULL, "
+               "last_accessed INTEGER NOT NULL);"
+               "INSERT INTO paths VALUES ('/kept', 7, 1000);");
+  REQUIRE(rawUserVersion(path) == 0);
+
+  {
+    DB db(path);
+    std::vector<DB::PathEntry> paths = db.getPaths();
+    REQUIRE(paths.size() == 1);
+    REQUIRE(paths[0].path == "/kept");
+    REQUIRE(paths[0].access_count == 7);
+  }
+
+  REQUIRE(rawUserVersion(path) > 0);
+}
+
+TEST_CASE("a database from a newer release is refused", "[DB]") {
+  testing::TempDir tmp;
+  std::string path = tmp / "db.sqlite3";
+
+  {
+    DB db(path);
+  }
+  runRaw(path, "PRAGMA user_version = 99;");
+
+  // Better to refuse than to silently misread a schema we don't know.
+  REQUIRE_THROWS_AS(DB(path), std::runtime_error);
 }
