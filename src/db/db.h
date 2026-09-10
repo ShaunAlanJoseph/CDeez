@@ -26,6 +26,8 @@ public:
   ~DB();
 
   void upsertPath(const std::string &path, std::time_t access_time);
+  void addPath(const std::string &path, int access_count,
+               std::time_t access_time);
   void removePath(const std::string &path);
   std::vector<PathEntry> getPaths() const;
   int totalAccessCount() const;

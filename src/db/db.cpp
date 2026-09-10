@@ -63,26 +63,29 @@ void DB::ensureTable() {
 }
 
 void DB::upsertPath(const std::string &path, std::time_t access_time) {
-  constexpr const char *UPSERT_PATH_QUERY =
+  addPath(path, 1, access_time);
+}
+
+void DB::addPath(const std::string &path, int access_count,
+                 std::time_t access_time) {
+  constexpr const char *ADD_PATH_QUERY =
       "INSERT INTO paths (path, access_count, last_accessed) "
-      "VALUES (?, 1, ?) "
+      "VALUES (?, ?, ?) "
       "ON CONFLICT(path) DO UPDATE SET "
-      "access_count = access_count + 1, "
-      "last_accessed = excluded.last_accessed;";
+      "access_count = access_count + excluded.access_count, "
+      "last_accessed = MAX(last_accessed, excluded.last_accessed);";
 
   sqlite3_stmt *stmt = nullptr;
   utils::ScopeGuard stmtGuard([&]() { sqlite3_finalize(stmt); });
-  if (sqlite3_prepare_v2(_db, UPSERT_PATH_QUERY, -1, &stmt, nullptr) !=
-      SQLITE_OK)
+  if (sqlite3_prepare_v2(_db, ADD_PATH_QUERY, -1, &stmt, nullptr) != SQLITE_OK)
     throw std::runtime_error("Failed to prepare statement: " +
                              std::string(sqlite3_errmsg(_db)));
 
   if (sqlite3_bind_text(stmt, 1, path.c_str(), -1, SQLITE_TRANSIENT) !=
-      SQLITE_OK)
-    throw std::runtime_error("Failed to bind parameter: " +
-                             std::string(sqlite3_errmsg(_db)));
-  if (sqlite3_bind_int64(stmt, 2, static_cast<sqlite3_int64>(access_time)) !=
-      SQLITE_OK)
+          SQLITE_OK ||
+      sqlite3_bind_int(stmt, 2, access_count) != SQLITE_OK ||
+      sqlite3_bind_int64(stmt, 3, static_cast<sqlite3_int64>(access_time)) !=
+          SQLITE_OK)
     throw std::runtime_error("Failed to bind parameter: " +
                              std::string(sqlite3_errmsg(_db)));
 
