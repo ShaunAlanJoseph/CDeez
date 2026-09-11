@@ -28,6 +28,13 @@ cd() {
   fi
 }
 
+# Tagged directories first, annotated with their tag, then everything else by
+# frecency, with duplicates dropped.
+__cdeez_candidates() {
+  \command cdeez tags | \command awk -F'\t' '{ print $2 "\t[" $1 "]" }'
+  \command cdeez list
+}
+
 cdi() {
   if ! \command -v fzf >/dev/null 2>&1; then
     \builtin print -u2 "cdi: fzf is not installed"
@@ -36,7 +43,9 @@ cdi() {
 
   \builtin local result
   if [[ "$#" -eq 0 ]]; then
-    result="$(\command cdeez list | fzf --height 40% --reverse --no-sort)"
+    result="$(__cdeez_candidates | \command awk -F'\t' '!seen[$1]++' \
+      | fzf --height 40% --reverse --no-sort --delimiter='\t' --with-nth=1,2 \
+      | \command cut -f1)"
   else
     result="$(\command cdeez query --list --exclude "$(__cdeez_pwd)" -- "$@" \
       | fzf --height 40% --reverse --no-sort)"
@@ -48,14 +57,25 @@ cdi() {
 if [[ -o zle ]]; then
   __cdeez_complete() {
     if (( CURRENT == 2 )); then
-      compadd -- add query init list
+      compadd -- add query init list import tag untag tags
     elif (( CURRENT == 3 )) && [[ "$words[2]" == init ]]; then
       compadd -- zsh bash fish
-    elif (( CURRENT == 3 )) && [[ "$words[2]" == add ]]; then
+    elif (( CURRENT == 3 )) && [[ "$words[2]" == untag ]]; then
+      compadd -- ${(f)"$(\command cdeez tags | \command cut -f1)"}
+    elif (( CURRENT == 3 )) && [[ "$words[2]" == (add|tag) ]]; then
       _files -/
     fi
   }
   compdef __cdeez_complete cdeez
+
+  # Keep the shell's own directory completion and offer tags alongside it.
+  __cdeez_cd_complete() {
+    _cd
+    \builtin local -a cdeez_tags
+    cdeez_tags=(${(f)"$(\command cdeez tags | \command cut -f1)"})
+    (( ${#cdeez_tags} )) && compadd -a cdeez_tags
+  }
+  compdef __cdeez_cd_complete cd
 fi
 )SH";
 
@@ -84,6 +104,11 @@ cd() {
   fi
 }
 
+__cdeez_candidates() {
+  \command cdeez tags | \command awk -F'\t' '{ print $2 "\t[" $1 "]" }'
+  \command cdeez list
+}
+
 cdi() {
   if ! \command -v fzf >/dev/null 2>&1; then
     echo "cdi: fzf is not installed" >&2
@@ -92,7 +117,9 @@ cdi() {
 
   local result
   if [ "$#" -eq 0 ]; then
-    result="$(\command cdeez list | fzf --height 40% --reverse --no-sort)"
+    result="$(__cdeez_candidates | \command awk -F'\t' '!seen[$1]++' \
+      | fzf --height 40% --reverse --no-sort --delimiter='\t' --with-nth=1,2 \
+      | \command cut -f1)"
   else
     result="$(\command cdeez query --list --exclude "$(__cdeez_pwd)" -- "$@" \
       | fzf --height 40% --reverse --no-sort)"
@@ -105,14 +132,23 @@ __cdeez_complete() {
   local cur="${COMP_WORDS[COMP_CWORD]}"
   local prev="${COMP_WORDS[COMP_CWORD-1]}"
   if [ "$COMP_CWORD" -eq 1 ]; then
-    COMPREPLY=($(compgen -W "add query init list" -- "$cur"))
+    COMPREPLY=($(compgen -W "add query init list import tag untag tags" -- "$cur"))
   elif [ "$prev" = "init" ]; then
     COMPREPLY=($(compgen -W "zsh bash fish" -- "$cur"))
-  elif [ "$prev" = "add" ]; then
+  elif [ "$prev" = "untag" ]; then
+    COMPREPLY=($(compgen -W "$(\command cdeez tags | \command cut -f1)" -- "$cur"))
+  elif [ "$prev" = "add" ] || [ "$prev" = "tag" ]; then
     COMPREPLY=($(compgen -d -- "$cur"))
   fi
 }
 complete -F __cdeez_complete cdeez
+
+# -o dirnames keeps normal directory completion; the tags are offered too.
+__cdeez_cd_complete() {
+  local cur="${COMP_WORDS[COMP_CWORD]}"
+  COMPREPLY=($(compgen -W "$(\command cdeez tags | \command cut -f1)" -- "$cur"))
+}
+complete -o dirnames -F __cdeez_cd_complete cd
 )SH";
 
   constexpr const char *FISH_SCRIPT =
@@ -150,7 +186,12 @@ function cdi
 
     set -l result
     if test (count $argv) -eq 0
-        set result (command cdeez list | fzf --height 40% --reverse --no-sort)
+        set result (begin
+                command cdeez tags | awk -F'\t' '{ print $2 "\t[" $1 "]" }'
+                command cdeez list
+            end | awk -F'\t' '!seen[$1]++' \
+            | fzf --height 40% --reverse --no-sort --delimiter='\t' --with-nth=1,2 \
+            | cut -f1)
     else
         set result (command cdeez query --list --exclude "$PWD" -- $argv \
             | fzf --height 40% --reverse --no-sort)
@@ -166,7 +207,16 @@ complete -c cdeez -n __fish_use_subcommand -a query -d 'Print the best match'
 complete -c cdeez -n __fish_use_subcommand -a init  -d 'Print shell integration'
 complete -c cdeez -n __fish_use_subcommand -a list  -d 'List known directories'
 complete -c cdeez -n '__fish_seen_subcommand_from init' -a 'zsh bash fish'
-complete -c cdeez -n '__fish_seen_subcommand_from add' -a '(__fish_complete_directories)'
+complete -c cdeez -n __fish_use_subcommand -a import -d 'Import directories from stdin'
+complete -c cdeez -n __fish_use_subcommand -a tag   -d 'Tag a directory'
+complete -c cdeez -n __fish_use_subcommand -a untag -d 'Remove a tag'
+complete -c cdeez -n __fish_use_subcommand -a tags  -d 'List tags'
+complete -c cdeez -n '__fish_seen_subcommand_from add tag' -a '(__fish_complete_directories)'
+complete -c cdeez -n '__fish_seen_subcommand_from untag' -a '(command cdeez tags | cut -f1)'
+
+# Offered alongside fish's own directory completion.
+complete -c cdeez -n 'false'
+complete -c cd -a '(command cdeez tags | cut -f1)' -d 'cdeez tag'
 )SH";
 } // namespace
 
