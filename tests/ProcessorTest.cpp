@@ -4,6 +4,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "TestSupport.h"
@@ -446,4 +447,158 @@ TEST_CASE("import honours the home and root exclusions", "[Processor]") {
 
   REQUIRE(result.imported == 0);
   REQUIRE(result.skipped == 2);
+}
+
+TEST_CASE("tag records a shorthand for a directory", "[Processor][tags]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string cf = tmp.makeDir("cp/codeforces");
+  processor.tag("cf", cf);
+
+  REQUIRE(processor.tags() ==
+          std::vector<std::pair<std::string, std::string>>{{"cf", cf}});
+  REQUIRE(processor.resolve({"cf"}) == cf);
+}
+
+TEST_CASE("tags are matched exactly, ignoring case", "[Processor][tags]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  processor.tag("CF", tmp.makeDir("cp/codeforces"));
+
+  REQUIRE(processor.resolve({"cf"}).has_value());
+  REQUIRE(processor.resolve({"CF"}).has_value());
+  // A tag is a deliberate shorthand, so it is never matched fuzzily.
+  REQUIRE(processor.resolve({"cff"}) == std::nullopt);
+}
+
+TEST_CASE("a tag beats a fuzzy match", "[Processor][tags]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string tagged = tmp.makeDir("cp/codeforces");
+  std::string frecent = tmp.makeDir("cfg");
+  for (int i = 0; i < 20; ++i)
+    processor.add(frecent);
+
+  processor.tag("cf", tagged);
+
+  REQUIRE(processor.resolve({"cf"}) == tagged);
+}
+
+TEST_CASE("a tag scopes the search to its own subtree", "[Processor][tags]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string cf = tmp.makeDir("cp/codeforces");
+  std::string inside = tmp.makeDir("cp/codeforces/div2");
+  std::string outside = tmp.makeDir("elsewhere/div2");
+
+  processor.tag("cf", cf);
+  processor.add(inside);
+  for (int i = 0; i < 20; ++i)
+    processor.add(outside);
+
+  // The far more frecent match outside the tag must not win.
+  REQUIRE(processor.resolve({"cf", "div2"}) == inside);
+}
+
+TEST_CASE("a scoped search that finds nothing does not fall back",
+          "[Processor][tags]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  processor.tag("cf", tmp.makeDir("cp/codeforces"));
+  std::string outside = tmp.makeDir("elsewhere/notes");
+  processor.add(outside);
+
+  // Answering a different question than the one asked is how you end up in
+  // the wrong directory.
+  REQUIRE(processor.resolve({"cf", "notes"}) == std::nullopt);
+}
+
+TEST_CASE("a tag finds an unvisited directory beneath it",
+          "[Processor][tags]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string cf = tmp.makeDir("cp/codeforces");
+  std::string never = tmp.makeDir("cp/codeforces/div2");
+  processor.tag("cf", cf);
+
+  // div2 was never recorded, so only the literal-path check can find it.
+  REQUIRE(processor.resolve({"cf", "div2"}) == never);
+}
+
+TEST_CASE("a broken tag is reported, not silently ignored",
+          "[Processor][tags]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string cf = tmp.makeDir("cp/codeforces");
+  processor.tag("cf", cf);
+  std::filesystem::remove_all(cf);
+
+  REQUIRE_THROWS_AS(processor.resolve({"cf"}), std::runtime_error);
+  // The tag survives: the target may be an unmounted drive.
+  REQUIRE(processor.tags().size() == 1);
+}
+
+TEST_CASE("tagging something that is not a directory fails",
+          "[Processor][tags]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  REQUIRE_THROWS_AS(processor.tag("cf", tmp / "missing"), std::runtime_error);
+  REQUIRE(processor.tags().empty());
+}
+
+TEST_CASE("retagging moves the shorthand", "[Processor][tags]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  processor.tag("cf", tmp.makeDir("old"));
+  std::string current = tmp.makeDir("new");
+  processor.tag("cf", current);
+
+  REQUIRE(processor.tags().size() == 1);
+  REQUIRE(processor.resolve({"cf"}) == current);
+}
+
+TEST_CASE("untag removes the shorthand", "[Processor][tags]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  processor.tag("cf", tmp.makeDir("cp/codeforces"));
+  processor.untag("cf");
+
+  REQUIRE(processor.tags().empty());
+  REQUIRE(processor.resolve({"cf"}) == std::nullopt);
+}
+
+TEST_CASE("aging never removes a tag", "[Processor][tags]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db, 10);
+
+  processor.tag("cf", tmp.makeDir("cp/codeforces"));
+
+  std::string busy = tmp.makeDir("busy");
+  for (int i = 0; i < 30; ++i)
+    processor.add(busy);
+
+  // Tags are deliberate, so they live outside the frecency database.
+  REQUIRE(processor.tags().size() == 1);
+  REQUIRE(processor.resolve({"cf"}).has_value());
 }
