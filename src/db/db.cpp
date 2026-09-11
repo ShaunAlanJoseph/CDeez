@@ -227,3 +227,95 @@ void DB::ageAll(double factor) {
     stmt = nullptr;
   }
 }
+
+void DB::setTag(const std::string &tag, const std::string &path) {
+  constexpr const char *SET_TAG_QUERY =
+      "INSERT INTO tags (tag, path) VALUES (?, ?) "
+      "ON CONFLICT(tag) DO UPDATE SET path = excluded.path;";
+
+  sqlite3_stmt *stmt = nullptr;
+  utils::ScopeGuard stmtGuard([&]() { sqlite3_finalize(stmt); });
+  if (sqlite3_prepare_v2(_db, SET_TAG_QUERY, -1, &stmt, nullptr) != SQLITE_OK)
+    throw std::runtime_error("Failed to prepare statement: " +
+                             std::string(sqlite3_errmsg(_db)));
+
+  if (sqlite3_bind_text(stmt, 1, tag.c_str(), -1, SQLITE_TRANSIENT) !=
+          SQLITE_OK ||
+      sqlite3_bind_text(stmt, 2, path.c_str(), -1, SQLITE_TRANSIENT) !=
+          SQLITE_OK)
+    throw std::runtime_error("Failed to bind parameter: " +
+                             std::string(sqlite3_errmsg(_db)));
+
+  if (sqlite3_step(stmt) != SQLITE_DONE)
+    throw std::runtime_error("Failed to execute statement: " +
+                             std::string(sqlite3_errmsg(_db)));
+}
+
+void DB::removeTag(const std::string &tag) {
+  constexpr const char *REMOVE_TAG_QUERY = "DELETE FROM tags WHERE tag = ?;";
+
+  sqlite3_stmt *stmt = nullptr;
+  utils::ScopeGuard stmtGuard([&]() { sqlite3_finalize(stmt); });
+  if (sqlite3_prepare_v2(_db, REMOVE_TAG_QUERY, -1, &stmt, nullptr) !=
+      SQLITE_OK)
+    throw std::runtime_error("Failed to prepare statement: " +
+                             std::string(sqlite3_errmsg(_db)));
+
+  if (sqlite3_bind_text(stmt, 1, tag.c_str(), -1, SQLITE_TRANSIENT) !=
+      SQLITE_OK)
+    throw std::runtime_error("Failed to bind parameter: " +
+                             std::string(sqlite3_errmsg(_db)));
+
+  if (sqlite3_step(stmt) != SQLITE_DONE)
+    throw std::runtime_error("Failed to execute statement: " +
+                             std::string(sqlite3_errmsg(_db)));
+}
+
+std::optional<std::string> DB::getTag(const std::string &tag) const {
+  constexpr const char *GET_TAG_QUERY = "SELECT path FROM tags WHERE tag = ?;";
+
+  sqlite3_stmt *stmt = nullptr;
+  utils::ScopeGuard stmtGuard([&]() { sqlite3_finalize(stmt); });
+  if (sqlite3_prepare_v2(_db, GET_TAG_QUERY, -1, &stmt, nullptr) != SQLITE_OK)
+    throw std::runtime_error("Failed to prepare statement: " +
+                             std::string(sqlite3_errmsg(_db)));
+
+  if (sqlite3_bind_text(stmt, 1, tag.c_str(), -1, SQLITE_TRANSIENT) !=
+      SQLITE_OK)
+    throw std::runtime_error("Failed to bind parameter: " +
+                             std::string(sqlite3_errmsg(_db)));
+
+  int rc = sqlite3_step(stmt);
+  if (rc == SQLITE_DONE)
+    return std::nullopt;
+  if (rc != SQLITE_ROW)
+    throw std::runtime_error("Failed to read row: " +
+                             std::string(sqlite3_errmsg(_db)));
+
+  return std::string(
+      reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0)));
+}
+
+std::vector<std::pair<std::string, std::string>> DB::getTags() const {
+  std::vector<std::pair<std::string, std::string>> result;
+  constexpr const char *GET_TAGS_QUERY =
+      "SELECT tag, path FROM tags ORDER BY tag;";
+
+  sqlite3_stmt *stmt = nullptr;
+  utils::ScopeGuard stmtGuard([&]() { sqlite3_finalize(stmt); });
+  if (sqlite3_prepare_v2(_db, GET_TAGS_QUERY, -1, &stmt, nullptr) != SQLITE_OK)
+    throw std::runtime_error("Failed to prepare statement: " +
+                             std::string(sqlite3_errmsg(_db)));
+
+  int rc;
+  while ((rc = sqlite3_step(stmt)) == SQLITE_ROW)
+    result.emplace_back(
+        reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0)),
+        reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1)));
+
+  if (rc != SQLITE_DONE)
+    throw std::runtime_error("Failed to read rows: " +
+                             std::string(sqlite3_errmsg(_db)));
+
+  return result;
+}

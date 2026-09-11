@@ -3,7 +3,9 @@
 #include <sqlite3.h>
 
 #include <ctime>
+#include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 class DB {
@@ -33,5 +35,9 @@ public:
   void removePath(const std::string &path);
   std::vector<PathEntry> getPaths() const;
   int totalAccessCount() const;
+  void setTag(const std::string &tag, const std::string &path);
+  void removeTag(const std::string &tag);
+  std::optional<std::string> getTag(const std::string &tag) const;
+  std::vector<std::pair<std::string, std::string>> getTags() const;
   void ageAll(double factor);
 };
