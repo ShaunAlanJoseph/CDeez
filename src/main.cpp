@@ -1,4 +1,5 @@
 #include <exception>
+#include <filesystem>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -18,6 +19,9 @@ namespace {
                                 "  cdeez init <zsh|bash|fish>\n"
                                 "  cdeez list\n"
                                 "  cdeez import   (reads paths on stdin)\n"
+                                "  cdeez tag <name> [path]\n"
+                                "  cdeez untag <name>\n"
+                                "  cdeez tags\n"
                                 "  cdeez --help | --version\n";
 
   int usageError() {
@@ -68,8 +72,15 @@ int main(int argc, char *argv[]) {
     return usageError();
   if (command == "import" && argc != 2)
     return usageError();
+  if (command == "tag" && (argc < 3 || argc > 4))
+    return usageError();
+  if (command == "untag" && argc != 3)
+    return usageError();
+  if (command == "tags" && argc != 2)
+    return usageError();
   if (command != "add" && command != "query" && command != "list" &&
-      command != "import")
+      command != "import" && command != "tag" && command != "untag" &&
+      command != "tags")
     return usageError();
 
   try {
@@ -78,6 +89,23 @@ int main(int argc, char *argv[]) {
 
     if (command == "add") {
       processor.add(argv[2]);
+      return 0;
+    }
+
+    if (command == "tag") {
+      std::string path = argc == 4 ? argv[3] : std::filesystem::current_path();
+      processor.tag(argv[2], path);
+      return 0;
+    }
+
+    if (command == "untag") {
+      processor.untag(argv[2]);
+      return 0;
+    }
+
+    if (command == "tags") {
+      for (const auto &[name, path] : processor.tags())
+        std::cout << name << "\t" << path << "\n";
       return 0;
     }
 
