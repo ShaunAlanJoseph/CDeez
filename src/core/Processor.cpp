@@ -12,6 +12,7 @@
 #include "db/db.h"
 #include "fuzzy/OrderMatches.h"
 #include "utils/PathUtils.h"
+#include "utils/StringUtils.h"
 
 namespace {
   constexpr double LAST_HOUR = 3600.0;
@@ -67,12 +68,17 @@ void Processor::add(const std::string &path) {
     _db.ageAll(static_cast<double>(_maxTotalAccess) / total);
 }
 
-std::vector<std::string> Processor::rank(const std::string &query,
-                                         const std::string &exclude) const {
+std::vector<std::string>
+Processor::_rankUnder(const std::string &query, const std::string &exclude,
+                      const std::string &baseDir) const {
   std::vector<MatchResult> results;
   std::time_t now = std::time(nullptr);
-  for (const auto &entry : _db.getPaths())
+  for (const auto &entry : _db.getPaths()) {
+    if (!baseDir.empty() && !entry.path.starts_with(baseDir + "/"))
+      continue;
+
     results.emplace_back(entry.path, _computeBaseScore(entry, now), false);
+  }
 
   scoreMatches(query, results);
 
@@ -93,13 +99,76 @@ std::vector<std::string> Processor::rank(const std::string &query,
   return matches;
 }
 
+std::vector<std::string>
+Processor::rank(const std::vector<std::string> &keywords,
+                const std::string &exclude) const {
+  /*
+  @brief Finds every directory matching the keywords.
+  @param keywords Terms that must match path segments, in order.
+  @param exclude A path to omit, normally the current directory.
+  @return Matches, best first, skipping directories that no longer exist.
+  */
+  if (keywords.empty())
+    return {};
+
+  std::optional<std::string> tagged = _db.getTag(utils::toLower(keywords[0]));
+
+  std::string query = keywords[0];
+  for (size_t i = 1; i < keywords.size(); ++i)
+    query += "/" + keywords[i];
+
+  if (!tagged)
+    return _rankUnder(query, exclude, "");
+
+  // A broken shortcut, not "nothing matched".
+  if (!utils::dirExists(*tagged))
+    throw std::runtime_error("The directory tagged '" + keywords[0] +
+                             "' no longer exists: " + *tagged);
+
+  if (keywords.size() == 1)
+    return {*tagged};
+
+  std::string rest = keywords[1];
+  for (size_t i = 2; i < keywords.size(); ++i)
+    rest += "/" + keywords[i];
+
+  // A real directory beats a fuzzy match, as in the wrapper.
+  std::string literal = *tagged + "/" + rest;
+  if (utils::dirExists(literal))
+    return {utils::normalizePath(literal)};
+
+  return _rankUnder(rest, exclude, *tagged);
+}
+
 std::optional<std::string>
-Processor::resolve(const std::string &query, const std::string &exclude) const {
-  std::vector<std::string> matches = rank(query, exclude);
+Processor::resolve(const std::vector<std::string> &keywords,
+                   const std::string &exclude) const {
+  std::vector<std::string> matches = rank(keywords, exclude);
   if (matches.empty())
     return std::nullopt;
 
   return matches.front();
+}
+
+void Processor::tag(const std::string &name, const std::string &path) {
+  /*
+  @brief Records an exact, case-insensitive shorthand for a directory.
+  Tags are stored apart from visit counts and are never aged away.
+  */
+  std::string fullPath = utils::normalizePath(path);
+
+  if (!utils::dirExists(fullPath))
+    throw std::runtime_error("Not a directory: " + fullPath);
+
+  _db.setTag(utils::toLower(name), fullPath);
+}
+
+void Processor::untag(const std::string &name) {
+  _db.removeTag(utils::toLower(name));
+}
+
+std::vector<std::pair<std::string, std::string>> Processor::tags() const {
+  return _db.getTags();
 }
 
 std::vector<std::string> Processor::list() const {

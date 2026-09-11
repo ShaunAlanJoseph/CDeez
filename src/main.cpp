@@ -2,6 +2,7 @@
 #include <iostream>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include "Version.h"
 #include "core/Processor.h"
@@ -120,17 +121,20 @@ int main(int argc, char *argv[]) {
     if (first >= argc)
       return usageError();
 
-    std::string query = joinKeywords(argc, argv, first);
+    std::vector<std::string> keywords;
+    for (int i = first; i < argc; ++i)
+      keywords.push_back(argv[i]);
 
     if (listAll) {
-      for (const std::string &path : processor.rank(query, exclude))
+      for (const std::string &path : processor.rank(keywords, exclude))
         std::cout << path << "\n";
       return 0;
     }
 
-    std::optional<std::string> match = processor.resolve(query, exclude);
+    std::optional<std::string> match = processor.resolve(keywords, exclude);
     if (!match) {
-      std::cerr << "cdeez: no match for '" << query << "'" << std::endl;
+      std::cerr << "cdeez: no match for '" << joinKeywords(argc, argv, first)
+                << "'" << std::endl;
       return 1;
     }
 

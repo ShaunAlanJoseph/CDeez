@@ -290,7 +290,7 @@ TEST_CASE("rank returns every match, best first", "[Processor]") {
   for (int i = 0; i < 5; ++i)
     processor.add(frequent);
 
-  std::vector<std::string> matches = processor.rank("work");
+  std::vector<std::string> matches = processor.rank({"work"});
   REQUIRE(matches.size() == 2);
   REQUIRE(matches[0] == frequent);
   REQUIRE(matches[1] == rare);
@@ -310,7 +310,7 @@ TEST_CASE("rank omits the excluded path", "[Processor]") {
 
   // Without this, standing in a directory and querying its own name is a
   // no-op jump that wastes the query.
-  std::vector<std::string> matches = processor.rank("work", here);
+  std::vector<std::string> matches = processor.rank({"work"}, here);
   REQUIRE(matches.size() == 1);
   REQUIRE(matches[0] == elsewhere);
 }
@@ -327,8 +327,8 @@ TEST_CASE("resolve honours the exclusion", "[Processor]") {
     processor.add(here);
   processor.add(elsewhere);
 
-  REQUIRE(processor.resolve("work") == here);
-  REQUIRE(processor.resolve("work", here) == elsewhere);
+  REQUIRE(processor.resolve({"work"}) == here);
+  REQUIRE(processor.resolve({"work"}, here) == elsewhere);
 }
 
 TEST_CASE("excluding the only match yields nothing", "[Processor]") {
@@ -339,7 +339,7 @@ TEST_CASE("excluding the only match yields nothing", "[Processor]") {
   std::string only = tmp.makeDir("work");
   processor.add(only);
 
-  REQUIRE(processor.resolve("work", only) == std::nullopt);
+  REQUIRE(processor.resolve({"work"}, only) == std::nullopt);
 }
 
 TEST_CASE("rank omits directories that no longer exist", "[Processor]") {
@@ -354,7 +354,7 @@ TEST_CASE("rank omits directories that no longer exist", "[Processor]") {
 
   std::filesystem::remove_all(stale);
 
-  std::vector<std::string> matches = processor.rank("work");
+  std::vector<std::string> matches = processor.rank({"work"});
   REQUIRE(matches.size() == 1);
   REQUIRE(matches[0] == live);
 }
