@@ -11,6 +11,9 @@ cdeez - a cd that learns where you go, and forgives how you type
 *cdeez* init _zsh_|_bash_|_fish_++
 *cdeez* list++
 *cdeez* import++
+*cdeez* tag _name_ [_path_]++
+*cdeez* untag _name_++
+*cdeez* tags++
 *cdeez* --help | --version
 
 # DESCRIPTION
@@ -57,6 +60,16 @@ directory changes.
 
 	A plain list of paths works too, so the same command imports from *z*,
 	*autojump*, or *find*(1).
+
+*tag* _name_ [_path_]
+	Record _name_ as a shorthand for _path_, defaulting to the current
+	directory. Retagging an existing name moves it.
+
+*untag* _name_
+	Remove a tag.
+
+*tags*
+	Print every tag and its directory, tab-separated, one per line.
 
 *--help*, *-h*
 	Print usage and exit.
@@ -123,6 +136,16 @@ skipped entirely when the query spans more than one path segment.
 Visit counts do not grow without bound. Once they total 10000, every entry is
 scaled down proportionally and anything falling below a single visit is
 deleted, so directories you have stopped using fade out.
+
+A tag is checked before any matching happens, is compared exactly though
+case-insensitively, and beats every fuzzy match. With further keywords the
+tagged directory becomes the base of the search: a real directory beneath it
+wins outright, otherwise the keywords are ranked against recorded directories
+under that tag, with no fallback to a wider search.
+
+Tags are stored separately from visit counts and are never aged away. If a
+tagged directory no longer exists, *cdeez* reports it and exits 3 instead of
+falling back to a fuzzy match; the tag itself is kept.
 
 # FILES
 

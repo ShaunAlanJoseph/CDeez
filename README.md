@@ -59,6 +59,9 @@ The shell function is the interface. The binary underneath has two commands:
 | `cdeez init <shell>` | Print the integration script for zsh, bash or fish. |
 | `cdeez list` | Print every known directory, most frecent first. |
 | `cdeez import` | Read directories from stdin and record them. |
+| `cdeez tag <name> [path]` | Tag a directory (default: the current one). |
+| `cdeez untag <name>` | Remove a tag. |
+| `cdeez tags` | List tags. |
 | `cdeez --help`, `--version` | Usage and version. |
 
 Exit codes: `0` resolved, `1` no match, `2` usage error, `3` database error.
@@ -79,6 +82,35 @@ zoxide query --list --score | cdeez import
 score, and skips anything that no longer exists. That format is what `zoxide
 query --list --score` emits, but a plain list of paths works too — so the same
 command imports from `z`, autojump, or `find`.
+
+## Tags
+
+Frecency is good at directories you visit often. It's bad at the one you visit
+rarely but need instantly. Tags are an explicit shorthand:
+
+```sh
+cd ~/cp/codeforces
+cdeez tag cf          # tags the current directory
+
+cd cf                 # jumps there, from anywhere
+cd cf div2            # searches only underneath it
+```
+
+A tag is matched **exactly** (ignoring case), never fuzzily — a two-letter
+shorthand that fuzzy-matches would reintroduce the ambiguity the tag exists to
+remove. An exact tag beats any fuzzy match.
+
+With extra keywords the tag acts as a base directory, so `cd cf div2` looks
+only underneath `~/cp/codeforces`. If `~/cp/codeforces/div2` exists on disk it
+wins outright, even if you have never been there; otherwise the keywords are
+ranked against directories you have visited under that tag. There's no silent
+fallback to a global search — you asked for something under `cf`, so answering
+a different question would just put you somewhere unexpected.
+
+Tags live in their own table, outside the frecency data, so **aging never
+removes them**. If the tagged directory disappears, `cd cf` says so and exits
+non-zero rather than guessing; the tag stays, because the target might be an
+unmounted drive.
 
 ## How ranking works
 
