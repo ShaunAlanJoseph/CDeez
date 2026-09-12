@@ -602,3 +602,95 @@ TEST_CASE("aging never removes a tag", "[Processor][tags]") {
   REQUIRE(processor.tags().size() == 1);
   REQUIRE(processor.resolve({"cf"}).has_value());
 }
+
+TEST_CASE("remove deletes a recorded directory", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string keep = tmp.makeDir("keep");
+  std::string drop = tmp.makeDir("drop");
+  processor.add(keep);
+  processor.add(drop);
+
+  REQUIRE(processor.remove(drop));
+  REQUIRE(processor.list() == std::vector<std::string>{keep});
+}
+
+TEST_CASE("remove reports a path it never knew", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  REQUIRE_FALSE(processor.remove(tmp.makeDir("untracked")));
+}
+
+TEST_CASE("remove normalizes its argument", "[Processor]") {
+  testing::TempDir tmp;
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  std::string dir = tmp.makeDir("a/b");
+  processor.add(dir);
+
+  REQUIRE(processor.remove(dir + "/../b/"));
+  REQUIRE(processor.list().empty());
+}
+
+TEST_CASE("exclusions default to home and root", "[Processor][exclude]") {
+  testing::TempDir tmp;
+  testing::EnvGuard home("HOME", tmp.path().c_str());
+  testing::EnvGuard spec("CDEEZ_EXCLUDE_DIRS", nullptr);
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  processor.add(tmp.path().string());
+  processor.add("/");
+  processor.add(tmp.makeDir("kept"));
+
+  REQUIRE(processor.list().size() == 1);
+}
+
+TEST_CASE("CDEEZ_EXCLUDE_DIRS accepts globs", "[Processor][exclude]") {
+  testing::TempDir tmp;
+  testing::EnvGuard home("HOME", tmp.path().c_str());
+  testing::EnvGuard spec("CDEEZ_EXCLUDE_DIRS",
+                         (tmp.path().string() + "/secret/*").c_str());
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  processor.add(tmp.makeDir("secret/deep"));
+  processor.add(tmp.makeDir("public"));
+
+  REQUIRE(processor.list() == std::vector<std::string>{tmp / "public"});
+}
+
+TEST_CASE("CDEEZ_EXCLUDE_DIRS replaces the defaults", "[Processor][exclude]") {
+  testing::TempDir tmp;
+  testing::EnvGuard home("HOME", tmp.path().c_str());
+  testing::EnvGuard spec("CDEEZ_EXCLUDE_DIRS", "/nothing/matches/this");
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  // Home is only excluded because it is in the default list, so overriding
+  // the list without repeating it means home gets tracked.
+  processor.add(tmp.path().string());
+
+  REQUIRE(processor.list().size() == 1);
+}
+
+TEST_CASE("several exclusion patterns are honoured", "[Processor][exclude]") {
+  testing::TempDir tmp;
+  testing::EnvGuard home("HOME", tmp.path().c_str());
+  testing::EnvGuard spec(
+      "CDEEZ_EXCLUDE_DIRS",
+      (tmp.path().string() + "/a:" + tmp.path().string() + "/b").c_str());
+  DB db(tmp / "db.sqlite3");
+  Processor processor(db);
+
+  processor.add(tmp.makeDir("a"));
+  processor.add(tmp.makeDir("b"));
+  processor.add(tmp.makeDir("c"));
+
+  REQUIRE(processor.list() == std::vector<std::string>{tmp / "c"});
+}

@@ -44,3 +44,37 @@ TEST_CASE("each script registers completions", "[ShellInit]") {
   REQUIRE(shell::initScript("fish")->find("complete -c cdeez") !=
           std::string::npos);
 }
+
+TEST_CASE("the script defines cd by default", "[ShellInit]") {
+  for (const char *name : {"zsh", "bash", "fish"}) {
+    std::string script = *shell::initScript(name);
+
+    INFO("shell: " << name);
+    REQUIRE(script.find("cdi") != std::string::npos);
+  }
+}
+
+TEST_CASE("the cmd option renames both commands", "[ShellInit]") {
+  std::string zsh = *shell::initScript("zsh", "j");
+
+  REQUIRE(zsh.find("\nj() {") != std::string::npos);
+  REQUIRE(zsh.find("\nji() {") != std::string::npos);
+  REQUIRE(zsh.find("\ncd() {") == std::string::npos);
+
+  std::string fish = *shell::initScript("fish", "j");
+  REQUIRE(fish.find("\nfunction j\n") != std::string::npos);
+  REQUIRE(fish.find("\nfunction ji\n") != std::string::npos);
+}
+
+TEST_CASE("renaming leaves the real cd alone", "[ShellInit]") {
+  std::string script = *shell::initScript("zsh", "j");
+
+  // The wrapper must still delegate to the shell's own cd, or it recurses.
+  REQUIRE(script.find("builtin cd") != std::string::npos);
+  REQUIRE(script.find("__cdeez_cd") != std::string::npos);
+  REQUIRE(script.find("@CMD@") == std::string::npos);
+}
+
+TEST_CASE("an unknown shell is rejected with a custom command", "[ShellInit]") {
+  REQUIRE(shell::initScript("tcsh", "j") == std::nullopt);
+}
