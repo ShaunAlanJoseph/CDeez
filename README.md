@@ -48,6 +48,30 @@ exists.
 
 Run `cdeez init zsh` on its own to read the script before you eval it.
 
+### Trying it without replacing `cd`
+
+Replacing `cd` is the default, but a bug in that wrapper is a bug in your
+ability to move around, so it's reasonable to live with it under another name
+first:
+
+```sh
+eval "$(cdeez init zsh --cmd j)"   # defines j and ji, leaves cd alone
+```
+
+`--cmd` renames both commands; everything else is unchanged.
+
+### Excluding directories
+
+`CDEEZ_EXCLUDE_DIRS` is a colon-separated list of glob patterns that are never
+recorded. It **replaces** the default, so repeat anything you still want gone:
+
+```sh
+export CDEEZ_EXCLUDE_DIRS="~:/:~/secret/*:/tmp/*"
+```
+
+The default is `~:/` — your home directory and the filesystem root, neither of
+which needs fuzzy matching.
+
 ## Usage
 
 The shell function is the interface. The binary underneath has two commands:
@@ -55,8 +79,9 @@ The shell function is the interface. The binary underneath has two commands:
 | Command | Effect |
 |---|---|
 | `cdeez add <path>` | Record a visit. Called by the `chpwd` hook. |
+| `cdeez remove <path>` | Forget a directory. |
 | `cdeez query [--exclude <path>] [--list] <term>...` | Print the best match to stdout, or exit 1. `--list` prints every match. |
-| `cdeez init <shell>` | Print the integration script for zsh, bash or fish. |
+| `cdeez init [--cmd <name>] <shell>` | Print the integration script. `--cmd` renames the commands. |
 | `cdeez list` | Print every known directory, most frecent first. |
 | `cdeez import` | Read directories from stdin and record them. |
 | `cdeez tag <name> [path]` | Tag a directory (default: the current one). |

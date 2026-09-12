@@ -7,8 +7,9 @@ cdeez - a cd that learns where you go, and forgives how you type
 # SYNOPSIS
 
 *cdeez* add _path_++
+*cdeez* remove _path_++
 *cdeez* query [*--exclude* _path_] [*--list*] _term_...++
-*cdeez* init _zsh_|_bash_|_fish_++
+*cdeez* init [*--cmd* _name_] _zsh_|_bash_|_fish_++
 *cdeez* list++
 *cdeez* import++
 *cdeez* tag _name_ [_path_]++
@@ -40,9 +41,15 @@ directory changes.
 	Several terms are joined with _/_, so each must match a path segment in
 	order: *cdeez query src fuzzy* is the same as *cdeez query src/fuzzy*.
 
-*init* _shell_
+*remove* _path_
+	Forget _path_. Exits 1 if it was not recorded.
+
+*init* [*--cmd* _name_] _shell_
 	Print the shell integration script for _zsh_, _bash_ or _fish_.
 	The script also registers completions for *cdeez* itself.
+
+	*--cmd* renames the two commands it defines, so *--cmd j* gives *j* and
+	*ji* and leaves the shell's own *cd* untouched. The default is *cd*.
 
 *list*
 	Print every known directory, most frecent first, one per line.
@@ -157,6 +164,11 @@ _$XDG_DATA_HOME/cdeez/db.sqlite3_
 
 *XDG_DATA_HOME*
 	Base directory for the path database.
+
+*CDEEZ_EXCLUDE_DIRS*
+	Colon-separated glob patterns that are never recorded. Setting it
+	replaces the default of _~:/_, so repeat those to keep them excluded.
+	A leading _~_ is expanded.
 
 *HOME*
 	Used to expand _~_ and to decide which directory to exclude from the
