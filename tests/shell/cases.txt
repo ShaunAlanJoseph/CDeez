@@ -1,0 +1,26 @@
+# name | script | expected directory, relative to HOME ("=" means unchanged)
+#      | optional 4th field: only run for these shells
+#
+# Scripts must use only syntax valid in zsh, bash and fish. The database is
+# seeded with explicit `cdeez add` calls rather than the hook, because bash
+# records from PROMPT_COMMAND, which never fires in a non-interactive script.
+fuzzy match|cdeez add "$HOME/downloads"; cd dwnlds|downloads
+exact basename|cdeez add "$HOME/downloads"; cd downloads|downloads
+typo|cdeez add "$HOME/music"; cd muzic|music
+real directory wins|cdeez add "$HOME/music"; cd downloads|downloads
+deep fuzzy|cdeez add "$HOME/projects/cdeez/src/fuzzy"; cd fuzzy|projects/cdeez/src/fuzzy
+multi keyword|cdeez add "$HOME/projects/cdeez/src/fuzzy"; cd cdeez fuzzy|projects/cdeez/src/fuzzy
+keyword order matters|cdeez add "$HOME/projects/cdeez/src/fuzzy"; cd fuzzy cdeez|=
+no match does not move|cdeez add "$HOME/music"; cd zzqqwx|=
+no args goes home|cd downloads; cd|=
+relative parent|cd projects/website; cd ..|projects
+previous directory|cd "$HOME/downloads"; cd "$HOME/music"; cd -|downloads
+# -P is a zsh/bash option; fish has no such flag, and the wrapper is meant
+# to defer to whatever the host shell does with a leading dash.
+option passthrough|cd music; cd -P "$HOME/downloads"|downloads|zsh bash
+excludes current directory|cdeez add "$HOME/work"; cdeez add "$HOME/workspace"; cd work; cd work|workspace
+path with a space|cdeez add "$HOME/my documents"; cd documents|my documents
+tag|cd cp/codeforces; cdeez tag cf; cd; cd cf|cp/codeforces
+tag scopes the search|cd cp/codeforces; cdeez tag cf; cd; cd cf div2|cp/codeforces/div2
+tag beats fuzzy|cdeez add "$HOME/cfg"; cd cp/codeforces; cdeez tag cf; cd; cd cf|cp/codeforces
+untag|cd cp/codeforces; cdeez tag xq; cdeez untag xq; cd; cd xq|=

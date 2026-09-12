@@ -21,3 +21,9 @@ target_link_libraries(cdeez_tests PRIVATE cdeez_lib Catch2::Catch2WithMain)
 
 include(Catch)
 catch_discover_tests(cdeez_tests)
+
+# Drives the real cd wrapper in whichever of zsh, bash and fish are installed,
+# and asserts on the directory it lands in. Shells that are missing are
+# reported as skipped rather than failing the run.
+add_test(NAME shell_integration
+         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/shell/run.sh $<TARGET_FILE:cdeez>)

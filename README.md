@@ -254,7 +254,9 @@ ctest --test-dir build
 ```
 
 Tests use Catch2 v3, via the system package if present and `FetchContent`
-otherwise. CI builds with `-Wall -Wextra -Wpedantic -Werror` on Ubuntu (gcc and
+otherwise. `ctest` also drives the real `cd` wrapper in each of zsh, bash and
+fish and asserts on the directory it lands in; shells that are not installed
+are skipped rather than failing. CI builds with `-Wall -Wextra -Wpedantic -Werror` on Ubuntu (gcc and
 clang) and Arch, and checks formatting against `.clang-format`.
 
 Pass `-DCDEEZ_BUILD_TESTS=OFF` to build without the test suite.
