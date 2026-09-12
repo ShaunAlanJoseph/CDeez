@@ -4,5 +4,6 @@
 #include <string>
 
 namespace shell {
-  std::optional<std::string> initScript(const std::string &shell);
+  std::optional<std::string> initScript(const std::string &shell,
+                                        const std::string &command = "cd");
 } // namespace shell

@@ -1,5 +1,7 @@
 #include "ShellInit.h"
 
+#include <cstddef>
+#include <cstring>
 #include <optional>
 #include <string>
 
@@ -12,7 +14,7 @@ __cdeez_hook() { \command cdeez add "$(__cdeez_pwd)" }
 chpwd_functions=("${(@)chpwd_functions:#__cdeez_hook}")
 chpwd_functions+=(__cdeez_hook)
 
-cd() {
+@CMD@() {
   if [[ "$#" -eq 0 ]]; then
     __cdeez_cd ~
   elif [[ "$#" -eq 1 && "$1" == "-" ]]; then
@@ -35,7 +37,7 @@ __cdeez_candidates() {
   \command cdeez list
 }
 
-cdi() {
+@CMD@i() {
   if ! \command -v fzf >/dev/null 2>&1; then
     \builtin print -u2 "cdi: fzf is not installed"
     return 1
@@ -75,7 +77,7 @@ if [[ -o zle ]]; then
     cdeez_tags=(${(f)"$(\command cdeez tags | \command cut -f1)"})
     (( ${#cdeez_tags} )) && compadd -a cdeez_tags
   }
-  compdef __cdeez_cd_complete cd
+  compdef __cdeez_cd_complete @CMD@
 fi
 )SH";
 
@@ -88,7 +90,7 @@ case "${PROMPT_COMMAND:-}" in
   *) PROMPT_COMMAND="__cdeez_hook${PROMPT_COMMAND:+;$PROMPT_COMMAND}" ;;
 esac
 
-cd() {
+@CMD@() {
   if [ "$#" -eq 0 ]; then
     __cdeez_cd ~
   elif [ "$#" -eq 1 ] && [ "$1" = "-" ]; then
@@ -109,7 +111,7 @@ __cdeez_candidates() {
   \command cdeez list
 }
 
-cdi() {
+@CMD@i() {
   if ! \command -v fzf >/dev/null 2>&1; then
     echo "cdi: fzf is not installed" >&2
     return 1
@@ -148,7 +150,7 @@ __cdeez_cd_complete() {
   local cur="${COMP_WORDS[COMP_CWORD]}"
   COMPREPLY=($(compgen -W "$(\command cdeez tags | \command cut -f1)" -- "$cur"))
 }
-complete -o dirnames -F __cdeez_cd_complete cd
+complete -o dirnames -F __cdeez_cd_complete @CMD@
 )SH";
 
   constexpr const char *FISH_SCRIPT =
@@ -166,7 +168,7 @@ function __cdeez_hook --on-variable PWD
     command cdeez add "$PWD"
 end
 
-function cd
+function @CMD@
     if test (count $argv) -ge 1
         and not string match -q -- '-*' $argv[1]
         and not test (count $argv) -eq 1 -a -d "$argv[1]"
@@ -178,7 +180,7 @@ function cd
     __cdeez_cd $argv
 end
 
-function cdi
+function @CMD@i
     if not command -v fzf >/dev/null 2>&1
         echo "cdi: fzf is not installed" >&2
         return 1
@@ -216,22 +218,34 @@ complete -c cdeez -n '__fish_seen_subcommand_from untag' -a '(command cdeez tags
 
 # Offered alongside fish's own directory completion.
 complete -c cdeez -n 'false'
-complete -c cd -a '(command cdeez tags | cut -f1)' -d 'cdeez tag'
+complete -c @CMD@ -a '(command cdeez tags | cut -f1)' -d 'cdeez tag'
 )SH";
 } // namespace
 
-std::optional<std::string> shell::initScript(const std::string &shell) {
+std::optional<std::string> shell::initScript(const std::string &shell,
+                                             const std::string &command) {
   /*
   @brief Builds the shell integration script.
   @param shell One of "zsh", "bash" or "fish".
   @param command The name to define, alongside that name plus "i".
   @return The script, or nullopt if the shell is unsupported.
   */
+  const char *script = nullptr;
   if (shell == "zsh")
-    return ZSH_SCRIPT;
-  if (shell == "bash")
-    return BASH_SCRIPT;
-  if (shell == "fish")
-    return FISH_SCRIPT;
-  return std::nullopt;
+    script = ZSH_SCRIPT;
+  else if (shell == "bash")
+    script = BASH_SCRIPT;
+  else if (shell == "fish")
+    script = FISH_SCRIPT;
+
+  if (!script)
+    return std::nullopt;
+
+  std::string result = script;
+  constexpr const char *PLACEHOLDER = "@CMD@";
+  for (size_t pos = result.find(PLACEHOLDER); pos != std::string::npos;
+       pos = result.find(PLACEHOLDER, pos + command.size()))
+    result.replace(pos, std::strlen(PLACEHOLDER), command);
+
+  return result;
 }

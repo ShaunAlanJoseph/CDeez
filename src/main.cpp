@@ -16,7 +16,7 @@ namespace {
                                 "  cdeez add <path>\n"
                                 "  cdeez query [--exclude <path>] [--list]\n"
                                 "              <term>...\n"
-                                "  cdeez init <zsh|bash|fish>\n"
+                                "  cdeez init [--cmd <name>] <zsh|bash|fish>\n"
                                 "  cdeez list\n"
                                 "  cdeez import   (reads paths on stdin)\n"
                                 "  cdeez tag <name> [path]\n"
@@ -55,10 +55,31 @@ int main(int argc, char *argv[]) {
   }
 
   if (command == "init") {
-    if (argc != 3)
+    // The flag may precede or follow the shell name.
+    std::string name = "cd";
+    std::string shellName;
+
+    for (int i = 2; i < argc; ++i) {
+      std::string arg = argv[i];
+
+      if (arg == "--cmd") {
+        if (i + 1 >= argc)
+          return usageError();
+
+        name = argv[++i];
+        continue;
+      }
+
+      if (!shellName.empty())
+        return usageError();
+
+      shellName = arg;
+    }
+
+    if (shellName.empty() || name.empty())
       return usageError();
 
-    std::optional<std::string> script = shell::initScript(argv[2]);
+    std::optional<std::string> script = shell::initScript(shellName, name);
     if (!script)
       return usageError();
 
