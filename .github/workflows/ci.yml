@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build libsqlite3-dev
+          sudo apt-get install -y cmake ninja-build libsqlite3-dev zsh fish
 
       # Catch2 is deliberately not installed here, so find_package misses and
       # CMake falls back to FetchContent. That keeps this job exercising the
@@ -44,7 +44,7 @@ jobs:
     container: archlinux:latest
     steps:
       - name: Install dependencies
-        run: pacman -Syu --noconfirm cmake ninja gcc sqlite catch2 git
+        run: pacman -Syu --noconfirm cmake ninja gcc sqlite catch2 git zsh fish
 
       - uses: actions/checkout@v4
 
