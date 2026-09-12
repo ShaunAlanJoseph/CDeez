@@ -132,7 +132,11 @@ void DB::addPath(const std::string &path, int access_count,
                              std::string(sqlite3_errmsg(_db)));
 }
 
-void DB::removePath(const std::string &path) {
+bool DB::removePath(const std::string &path) {
+  /*
+  @brief Removes a path from the database.
+  @return True if the path was present, false otherwise.
+  */
   constexpr const char *REMOVE_PATH_QUERY = "DELETE FROM paths WHERE path = ?;";
 
   sqlite3_stmt *stmt = nullptr;
@@ -150,6 +154,8 @@ void DB::removePath(const std::string &path) {
   if (sqlite3_step(stmt) != SQLITE_DONE)
     throw std::runtime_error("Failed to execute statement: " +
                              std::string(sqlite3_errmsg(_db)));
+
+  return sqlite3_changes(_db) > 0;
 }
 
 std::vector<DB::PathEntry> DB::getPaths() const {

@@ -13,6 +13,7 @@ class Processor {
 private:
   DB &_db;
   int _maxTotalAccess;
+  std::vector<std::string> _excludePatterns;
 
   double _computeBaseScore(const DB::PathEntry &entry, std::time_t now) const;
 
@@ -28,6 +29,8 @@ public:
   explicit Processor(DB &db, int maxTotalAccess = DEFAULT_MAX_TOTAL_ACCESS);
 
   void add(const std::string &path);
+
+  bool remove(const std::string &path);
 
   std::vector<std::string> rank(const std::vector<std::string> &keywords,
                                 const std::string &exclude = "") const;

@@ -1,7 +1,10 @@
 #include "Processor.h"
 
+#include <fnmatch.h>
+
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <ctime>
 #include <optional>
 #include <sstream>
@@ -26,6 +29,7 @@ namespace {
   constexpr double LAST_MONTH_MULTIPLIER = 0.5;
   constexpr double OLDER_MULTIPLIER = 0.25;
 
+  constexpr const char *DEFAULT_EXCLUDE_DIRS = "~:/";
 } // namespace
 
 double Processor::_computeBaseScore(const DB::PathEntry &entry,
@@ -46,10 +50,27 @@ double Processor::_computeBaseScore(const DB::PathEntry &entry,
 }
 
 Processor::Processor(DB &db, int maxTotalAccess)
-    : _db(db), _maxTotalAccess(maxTotalAccess) {}
+    : _db(db), _maxTotalAccess(maxTotalAccess) {
+  const char *spec = std::getenv("CDEEZ_EXCLUDE_DIRS");
+
+  for (std::string pattern :
+       utils::tokenize(spec && spec[0] ? spec : DEFAULT_EXCLUDE_DIRS, ':')) {
+    pattern = utils::expandHome(pattern);
+
+    if (pattern.size() > 1 && pattern.back() == '/')
+      pattern.pop_back();
+
+    if (!pattern.empty())
+      _excludePatterns.push_back(pattern);
+  }
+}
 
 bool Processor::_isExcluded(const std::string &path) const {
-  return path == "/" || path == utils::normalizePath("~");
+  for (const std::string &pattern : _excludePatterns)
+    if (fnmatch(pattern.c_str(), path.c_str(), 0) == 0)
+      return true;
+
+  return false;
 }
 
 void Processor::add(const std::string &path) {
@@ -66,6 +87,14 @@ void Processor::add(const std::string &path) {
   int total = _db.totalAccessCount();
   if (total > _maxTotalAccess)
     _db.ageAll(static_cast<double>(_maxTotalAccess) / total);
+}
+
+bool Processor::remove(const std::string &path) {
+  /*
+  @brief Forgets a directory.
+  @return True if the path was recorded, false otherwise.
+  */
+  return _db.removePath(utils::normalizePath(path));
 }
 
 std::vector<std::string>

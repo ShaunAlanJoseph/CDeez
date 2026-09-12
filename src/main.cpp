@@ -14,6 +14,7 @@
 namespace {
   constexpr const char *USAGE = "Usage:\n"
                                 "  cdeez add <path>\n"
+                                "  cdeez remove <path>\n"
                                 "  cdeez query [--exclude <path>] [--list]\n"
                                 "              <term>...\n"
                                 "  cdeez init [--cmd <name>] <zsh|bash|fish>\n"
@@ -87,7 +88,7 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  if (command == "add" && argc != 3)
+  if ((command == "add" || command == "remove") && argc != 3)
     return usageError();
   if (command == "list" && argc != 2)
     return usageError();
@@ -101,7 +102,7 @@ int main(int argc, char *argv[]) {
     return usageError();
   if (command != "add" && command != "query" && command != "list" &&
       command != "import" && command != "tag" && command != "untag" &&
-      command != "tags")
+      command != "tags" && command != "remove")
     return usageError();
 
   try {
@@ -110,6 +111,15 @@ int main(int argc, char *argv[]) {
 
     if (command == "add") {
       processor.add(argv[2]);
+      return 0;
+    }
+
+    if (command == "remove") {
+      if (!processor.remove(argv[2])) {
+        std::cerr << "cdeez: not in the database: " << argv[2] << std::endl;
+        return 1;
+      }
+
       return 0;
     }
 
