@@ -36,6 +36,16 @@ would override them.
 
 ## Test builds
 
+```sh
+./packaging/build-local.sh
+```
+
+Builds a package from the current checkout and leaves it, the source tarball
+and makepkg's scratch directories in `dist/`, which is not tracked. The commit
+is baked in automatically.
+
+Behind that script:
+
 A release tarball carries no repository, so `cdeez --version` reports a bare
 version and two test builds look alike. Pass the commit in when handing builds
 round for testing, so a bug report names the build it came from:
