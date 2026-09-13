@@ -46,7 +46,11 @@ int main(int argc, char *argv[]) {
   std::string command = argv[1];
 
   if (command == "--version" || command == "-V") {
-    std::cout << "cdeez " << cdeez::VERSION << "\n";
+    std::cout << "cdeez " << cdeez::VERSION;
+    if (cdeez::REVISION[0] != '\0')
+      std::cout << " (" << cdeez::REVISION << ")";
+
+    std::cout << "\n";
     return 0;
   }
 

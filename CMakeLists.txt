@@ -7,6 +7,21 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(CDEEZ_BUILD_TESTS "Build the test suite" ON)
 
+# Identifies which build a bug report came from. Resolved at configure time,
+# so re-run cmake to pick up newer commits. Empty for a release tarball, which
+# has no repository to ask.
+set(CDEEZ_REVISION "")
+
+find_package(Git QUIET)
+if(GIT_FOUND AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} describe --always --dirty --abbrev=8
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    OUTPUT_VARIABLE CDEEZ_REVISION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET)
+endif()
+
 configure_file(src/Version.h.in ${CMAKE_CURRENT_BINARY_DIR}/generated/Version.h @ONLY)
 
 find_package(SQLite3 REQUIRED)

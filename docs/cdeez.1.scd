@@ -82,7 +82,8 @@ directory changes.
 	Print usage and exit.
 
 *--version*, *-V*
-	Print the version and exit.
+	Print the version and exit. Builds made from a repository also report
+	the commit they came from, which is what to quote in a bug report.
 
 # SHELL FUNCTIONS
 

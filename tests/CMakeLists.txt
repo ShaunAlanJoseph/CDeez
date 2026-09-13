@@ -15,7 +15,8 @@ add_executable(cdeez_tests
   MatchersTest.cpp
   DbTest.cpp
   ProcessorTest.cpp
-  ShellInitTest.cpp)
+  ShellInitTest.cpp
+  VersionTest.cpp)
 
 target_link_libraries(cdeez_tests PRIVATE cdeez_lib Catch2::Catch2WithMain)
 

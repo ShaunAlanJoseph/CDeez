@@ -2,4 +2,8 @@
 
 namespace cdeez {
   constexpr const char *VERSION = "@PROJECT_VERSION@";
+
+  // The commit this was built from, or empty when built from a release
+  // tarball, which carries no repository.
+  constexpr const char *REVISION = "@CDEEZ_REVISION@";
 } // namespace cdeez
