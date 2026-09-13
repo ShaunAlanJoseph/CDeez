@@ -8,12 +8,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(CDEEZ_BUILD_TESTS "Build the test suite" ON)
 
 # Identifies which build a bug report came from. Resolved at configure time,
-# so re-run cmake to pick up newer commits. Empty for a release tarball, which
-# has no repository to ask.
-set(CDEEZ_REVISION "")
+# so re-run cmake to pick up newer commits. A source tarball has no repository
+# to ask, so a packager that wants the commit recorded passes
+# -DCDEEZ_REVISION=... explicitly.
+set(CDEEZ_REVISION "" CACHE STRING "Commit to report in --version")
 
 find_package(Git QUIET)
-if(GIT_FOUND AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
+if(NOT CDEEZ_REVISION AND GIT_FOUND AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
   execute_process(
     COMMAND ${GIT_EXECUTABLE} describe --always --dirty --abbrev=8
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}

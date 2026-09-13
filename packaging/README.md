@@ -34,6 +34,19 @@
 supplies its own optimisation flags through `CXXFLAGS`, and a `Release` build
 would override them.
 
+## Test builds
+
+A release tarball carries no repository, so `cdeez --version` reports a bare
+version and two test builds look alike. Pass the commit in when handing builds
+round for testing, so a bug report names the build it came from:
+
+```sh
+CDEEZ_REVISION=$(git describe --always --dirty --abbrev=8) makepkg -f
+```
+
+Leave it unset for the real release: there the tag is what identifies the
+build.
+
 ## Expected namcap output
 
 `namcap PKGBUILD` is clean. `namcap` on the built package reports three
